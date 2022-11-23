@@ -68,13 +68,14 @@ describe('redirect-logs', () => {
       expect(console.error?.mock.calls).toEqual([]);
       expect(console.warn?.mock.calls).toEqual([]);
       expect(console.debug?.mock.calls).toEqual([]);
-      expect(console.log?.mock.calls).toEqual([
-        ['[2021-10-07T03:19:27.343Z] undefined \u001b[1mlog\u001b[22m (undefined): Message from Browser'],
-        ['                                     \u001b[1mURL\u001b[22m: some url'],
-        ['                                     Stack trace line number: 4'],
-        ['                                     Stack trace description: undefined'],
-        ['                                     Stack call frames: '],
+
+      expect(console.log?.mock.calls[0][0]).toContain('Message from Browser');
+      expect(console.log?.mock.calls[1][0]).toContain('some url');
+      expect(console.log?.mock.calls[2]).toEqual(['                                     Stack trace line number: 4']);
+      expect(console.log?.mock.calls[3]).toEqual([
+        '                                     Stack trace description: undefined',
       ]);
+      expect(console.log?.mock.calls[4]).toEqual(['                                     Stack call frames: ']);
     });
 
     it('logEntry with args', () => {
@@ -95,16 +96,16 @@ describe('redirect-logs', () => {
       expect(console.error?.mock.calls).toEqual([]);
       expect(console.warn?.mock.calls).toEqual([]);
       expect(console.debug?.mock.calls).toEqual([]);
-      expect(console.log?.mock.calls).toEqual([
-        ['[2021-10-07T03:19:27.343Z] undefined \u001b[1mlog\u001b[22m (undefined): Message from Browser'],
-        ['                                     \u001b[1mURL\u001b[22m: some url'],
-        ['                                     Stack trace line number: 4'],
-        ['                                     Stack trace description: undefined'],
-        ['                                     Stack call frames: '],
-        ['                                     Arguments:'],
-        [
-          '                                       [\n                                         "mya1",\n                                         "mya2"\n                                       ]',
-        ],
+      expect(console.log?.mock.calls[0][0]).toContain('Message from Browser');
+      expect(console.log?.mock.calls[1][0]).toContain('some url');
+      expect(console.log?.mock.calls[2]).toEqual(['                                     Stack trace line number: 4']);
+      expect(console.log?.mock.calls[3]).toEqual([
+        '                                     Stack trace description: undefined',
+      ]);
+      expect(console.log?.mock.calls[4]).toEqual(['                                     Stack call frames: ']);
+      expect(console.log?.mock.calls[5]).toEqual(['                                     Arguments:']);
+      expect(console.log?.mock.calls[6]).toEqual([
+        '                                       [\n                                         "mya1",\n                                         "mya2"\n                                       ]',
       ]);
     });
 
@@ -153,9 +154,7 @@ describe('redirect-logs', () => {
       expect(console.error?.mock.calls[0]).toEqual(undefined);
       expect(console.debug?.mock.calls[0]).toEqual(undefined);
 
-      expect(console.log?.mock.calls[0]).toEqual([
-        '\u001b[31m[2021-10-07T03:19:27.343Z] ⚠ \u001b[1mconsole.error\u001b[22m called\u001b[39m',
-      ]);
+      expect(console.log?.mock.calls[0][0]).toContain('console.error');
     });
   });
 
