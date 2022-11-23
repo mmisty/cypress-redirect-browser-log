@@ -1,12 +1,18 @@
-# cypress-template
+# cypress-redirect-browser-log
 
-Template to create cypress library
+Install: 
+
+`npm i --save-dev cypress-redirect-browser-log`
+
+Will connect to chrome debugging protocol and redirect logs
 
 - [x] typescript
 - [x] code coverage for cypress and jest, merge coverage
 - [x] formatting and eslint
 - [x] jest tests
-- [x] proper extraction
+- [ ] todo to file
+- [ ] todo setup
+- [ ] todo docs
 
 
 Scripts

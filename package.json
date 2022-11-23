@@ -1,10 +1,10 @@
 {
-  "name": "cypress-template",
+  "name": "cypress-redirect-browser-log",
   "version": "0.0.1",
   "main": "./index",
   "types": "./index.d.ts",
   "files": [],
-  "repository": "git@github.com:mmisty/cypress-template.git",
+  "repository": "git@github.com:mmisty/cypress-redirect-browser-log.git",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
@@ -25,14 +25,15 @@
     "test:cov": "jest --coverage",
     "cy:open": "$(npm bin)/cypress open",
     "cy:open:cov": "CYPRESS_COVERAGE=true npm run cy:open",
-    "cy:run": "$(npm bin)/cypress run",
+    "cy:run": "CYPRESS_LOG_NODE=true $(npm bin)/cypress run --browser chrome --headless",
     "cy:run:cov": "CYPRESS_COVERAGE=true npm run cy:run",
     "cov:merge": "node .scripts/merge-coverage.js --out 'reports/coverage-full' --cypress 'reports/coverage-cypress' --jest 'reports/coverage-jest'",
     "instrument": "COVERAGE=true node .scripts/instrument.js --src './src' --dest './instrumented' --cypress 'reports/coverage-cypress'",
     "cov:jest": "http-server ./reports/coverage-jest/lcov-report",
     "cov:cy": "http-server ./reports/coverage-cypress/cypress/lcov-report",
     "cov": "http-server ./reports/coverage-full/lcov-report",
-    "cov:check": "npx nyc check-coverage",
+    "cov2": "http-server ./reports/coverage-full-report/lcov-report",
+    "cov:check": "npx nyc check-coverage --temp-dir 'reports/coverage-full'",
     "pre": "rm -rf lib reports instrumented && npm run fmt && npm run lint && npm run tsc && npm run test:cov && npm run cy:run:cov && npm run cov:merge && npm run cov:check",
     "extract": "node .scripts/extract.js  --source lib --target . --package package.json",
     "extract:undo": "npm run extract -- --undo",
@@ -52,7 +53,6 @@
     "@types/node": "^18.11.9",
     "@typescript-eslint/eslint-plugin": "^5.33.1",
     "@typescript-eslint/parser": "^5.33.1",
-    "chalk": "~2.0.0",
     "cypress": "^10.10.0",
     "esbuild-loader": "^2.19.0",
     "eslint": "^8.22.0",
@@ -77,5 +77,9 @@
     "typescript": "^4.7.4",
     "webpack": "^5.73.0",
     "yargs": "^17.6.2"
+  },
+  "dependencies": {
+    "chalk": "~2.0.0",
+    "chrome-remote-interface": "^0.31.3"
   }
 }

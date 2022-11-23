@@ -1,10 +1,15 @@
-import { registerCommands } from '../commands';
+import { wrapLogs } from '../logging/wrap-log';
 
-export const myPluginSetup = () => {
-  // here you can do setup for each test file in browser
-  beforeEach(() => {
-    cy.task('log', 'Registered my plugin');
-  });
+export type RedirectLogsConfig = {
+  isLogFromTest?:
+    | false
+    | {
+        isLogCommandDetails: boolean;
+      };
+};
 
-  registerCommands();
+export const redirectLogsBrowser = (config?: RedirectLogsConfig) => {
+  if (config?.isLogFromTest) {
+    wrapLogs({ isLogDetails: config.isLogFromTest.isLogCommandDetails });
+  }
 };

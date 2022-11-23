@@ -119,9 +119,29 @@ if(fs.existsSync(cyCov)){
 }
 
 if(fs.existsSync(jestCov)){
-  fs.copyFileSync(jestCov, `${outDir}/coverage-jest.json`);
+  let tempJest = `${outDir}-jest-temp`
+  if(!fs.existsSync(tempJest)){
+    fs.mkdirSync(tempJest);
+  }
+  fs.copyFileSync(jestCov, `${tempJest}/coverage-jest.json`);
+  
+  // this is required to convert to correct format, otherwise will have exceptions in report
+  exec.execSync(`npx nyc merge ${tempJest} ${tempJest}/cov-fin.json`);
+  // exec.execSync(`npx nyc report --report-dir ${tempJest} --check-coverage false --temp-dir ${tempJest}`);
+
+  fs.copyFileSync(`${tempJest}/cov-fin.json`, `${outDir}/coverage-jest.json`);
+}
+const report = `${outDir}-report`;
+if(!fs.existsSync(report)){
+  fs.mkdirSync(report);
 }
 
-exec.execSync(`npx nyc report --report-dir ${outDir} --check-coverage false --temp-dir ${outDir}`);
+
+// Create lcov report and output to coverage directory
+//runCommand(`npx nyc report --reporter lcov --reporter json --report-dir ${reportPath}/reports`);
+exec.execSync(`npx nyc merge ${coverageFullDir} ${report}/out2.json`);
+
+exec.execSync(`npx nyc merge ${outDir} ${report}/out.json`); //true
+exec.execSync(`npx nyc report --report-dir ${report} --check-coverage false --temp-dir ${report}`);
 
 console.log('Success!');
