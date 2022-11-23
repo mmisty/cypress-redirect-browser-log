@@ -1,6 +1,6 @@
 {
   "name": "cypress-redirect-browser-log",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "main": "./index",
   "types": "./index.d.ts",
   "files": [],

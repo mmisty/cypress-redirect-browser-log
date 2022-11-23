@@ -3,6 +3,8 @@ import BrowserLaunchOptions = Cypress.BrowserLaunchOptions;
 import { stringifyWithCatch } from '../utils/json-utils';
 import { filterFunc } from './filter';
 
+export { filterFunc } from './filter';
+
 export type Config = {
   isLog?: boolean;
   redirectToFileTest?: {
