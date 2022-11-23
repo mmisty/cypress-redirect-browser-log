@@ -41,9 +41,6 @@
     "postpublish": "npm run extract:undo"
   },
   "browser": {},
-  "peerDependencies": {
-    "cypress": ">10.x.x"
-  },
   "devDependencies": {
     "@cypress/code-coverage": "^3.10.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
