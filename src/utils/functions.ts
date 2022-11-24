@@ -1,3 +1,11 @@
+export const checkCovFn = (inp: string) => {
+  if (inp === 'jest') {
+    return 'jest';
+  } else {
+    return 'cypress';
+  }
+};
+
 export const getMatches = (str: string, regexp: RegExp): string[][] => {
   if (regexp.flags.indexOf('g') === -1) {
     throw new Error('Specify global flag (g) for regexp in getMatches func');

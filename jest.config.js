@@ -3,10 +3,10 @@
 
 module.exports = {
   testMatch: [
-    '**/src/**/(*.)+(spec|test).[t]s?(x)',
+    '**/instrumented/**/(*.)+(spec|test).[t]s?(x)',
     '!**/cypress-e2e/**/*.(spec|test).ts',
     '!**/lib/**/*.*',
-    '!**/instrumented/**/*.*',
+    // '!**/instrumented/**/*.*',
   ],
   collectCoverage: false,
   transform: {

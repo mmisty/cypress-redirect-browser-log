@@ -32,7 +32,7 @@ export const registerCoverage = (
 
   if (coverage) {
     coverageTsConfig = tsConfigCoverage;
-    instrumentApp(src, instrumented, reports);
+    // instrumentApp(src, instrumented, reports);
 
     const fs = require('fs');
 
