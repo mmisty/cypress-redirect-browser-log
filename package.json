@@ -1,8 +1,8 @@
-{"name": "cypress-redirect-browser-log",
+{
+  "name": "cypress-redirect-browser-log",
   "version": "0.0.4",
   "main": "./index",
   "types": "./index.d.ts",
-  "files": [],
   "repository": "git@github.com:mmisty/cypress-redirect-browser-log.git",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
@@ -50,6 +50,7 @@
     "@types/node": "^18.11.9",
     "@typescript-eslint/eslint-plugin": "^5.44.0",
     "@typescript-eslint/parser": "^5.44.0",
+    "chalk": "~2.0.0",
     "cypress": "^11.2.0",
     "eslint": "^8.28.0",
     "eslint-config-prettier": "^8.5.0",
