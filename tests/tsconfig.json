@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "sourceMap": false,
+    "isolatedModules": true,
+    "types": ["node", "jest", "cypress", "jest-test-each"]
+  }
+}

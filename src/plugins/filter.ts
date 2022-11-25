@@ -201,38 +201,40 @@ const additionStrFn = (date: number, lt: LogType) => {
   return `${new Date(date).toISOString()} | ${logTypeStr} | `;
 };
 
-export const filterFunc = (isLog: boolean) => (type: string, event: { type: string } & unknown): boolean => {
-  // return true or false from this plugin to control if the event is logged
-  // `type` is either `console` or `browser`
-  // if `type` is `browser`, `event` is an object of the type `LogEntry`:
-  //  https://chromedevtools.github.io/devtools-protocol/tot/Log#type-LogEntry
-  // if `type` is `console`, `event` is an object of the type passed to `Runtime.consoleAPICalled`:
-  //  https://chromedevtools.github.io/devtools-protocol/tot/Runtime#event-consoleAPICalled
+export const filterFunc =
+  (isLog: boolean) =>
+  (type: string, event: { type: string } & unknown): boolean => {
+    // return true or false from this plugin to control if the event is logged
+    // `type` is either `console` or `browser`
+    // if `type` is `browser`, `event` is an object of the type `LogEntry`:
+    //  https://chromedevtools.github.io/devtools-protocol/tot/Log#type-LogEntry
+    // if `type` is `console`, `event` is an object of the type passed to `Runtime.consoleAPICalled`:
+    //  https://chromedevtools.github.io/devtools-protocol/tot/Runtime#event-consoleAPICalled
 
-  // this executes on every entry
+    // this executes on every entry
 
-  if (!isLog) {
+    if (!isLog) {
+      return false;
+    }
+
+    switch (type) {
+      case 'console': {
+        logConsoleApi(event, additionStrFn);
+        break;
+      }
+
+      case 'browser': {
+        logBrowser(event, additionStrFn);
+
+        break;
+      }
+
+      default: {
+        warn(`UNKNOWN LOG TYPE: ${type}`);
+        warn(event);
+        break;
+      }
+    }
+
     return false;
-  }
-
-  switch (type) {
-    case 'console': {
-      logConsoleApi(event, additionStrFn);
-      break;
-    }
-
-    case 'browser': {
-      logBrowser(event, additionStrFn);
-
-      break;
-    }
-
-    default: {
-      warn(`UNKNOWN LOG TYPE: ${type}`);
-      warn(event);
-      break;
-    }
-  }
-
-  return false;
-};
+  };

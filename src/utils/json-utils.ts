@@ -8,7 +8,7 @@ export const stringifyWithCatch = (obj: unknown, indent = false, whenErr = 'Coul
 
 export const tryParseJson = <T, K = T>(
   str: string,
-  callBackSuccess: (parsed: T) => K = (p: T) => (p as unknown) as K,
+  callBackSuccess: (parsed: T) => K = (p: T) => p as unknown as K,
   callBackFail: () => K | null = () => null,
 ): K | null => {
   let parsed;

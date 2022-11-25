@@ -1,27 +1,24 @@
 {
   "compilerOptions": {
+    "target": "es2016",
     "module": "commonjs",
-    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2015",
+    "esModuleInterop": true,
     "declaration": true,
+    "outDir": "./lib",
     "strict": true,
     "resolveJsonModule": true,
-    "experimentalDecorators": true,
     "noImplicitAny": false,
+    "skipLibCheck": true,
     "moduleResolution": "node",
-    "sourceMap": true,
-    "outDir": "lib",
     "importsNotUsedAsValues": "error",
-    "types": ["node", "cypress"]
+    "types": ["node", "jest", "cypress"],
+    "baseUrl": "./",
+    "paths": {
+      "cy-local": ["./src"],
+      "cy-local/*": ["./src/*"]
+    }
   },
-  "include": [
-    "src",
-    "docs",
-    "README.md",
-    "cypress-e2e",
-    "cypress.config.ts",
-    "*.js",
-    "node_modules/jest-test-each/dist/index.d.ts"
-  ]
+
+  "include": ["src", "node_modules/jest-test-each/dist/index.d.ts"]
 }

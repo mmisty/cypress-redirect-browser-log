@@ -14,7 +14,8 @@ export type Config = {
 
 export const redirectLog = (config?: Config) => {
   const { isLog } = config ?? { isLog: true };
-  const chalk = require('chalk');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  //const chalk = require('chalk');
 
   // input
   //  - out stream
@@ -22,9 +23,9 @@ export const redirectLog = (config?: Config) => {
 
   const severityColors = {
     verbose: a => a,
-    info: chalk.blue,
-    warning: chalk.yellow,
-    error: chalk.red,
+    info: a => a,
+    warning: a => a,
+    error: a => a,
   };
 
   const severityIcons = {
@@ -91,14 +92,15 @@ export const redirectLog = (config?: Config) => {
     const prefix = `[${new Date(timestamp).toISOString()}] ${icon} `;
     const prefixSpacer = ' '.repeat(prefix.length);
 
-    const logMessage = `${prefix}${chalk.bold(`console.${type}`)} called`;
+    // const logMessage = `${prefix}${chalk.bold(`console.${type}`)} called`;
+    const logMessage = `${prefix}${`console.${type}`} called`;
 
-    log(color(([logMessage] as unknown) as TemplateStringsArray));
+    log(color([logMessage] as unknown as TemplateStringsArray));
     // recordLogMessage(logMessage);
 
     const logAdditional = msg => {
       const logMsg = `${prefixSpacer}${msg}`;
-      log(color(([logMsg] as unknown) as TemplateStringsArray));
+      log(color([logMsg] as unknown as TemplateStringsArray));
       // recordLogMessage(logMessage);
     };
 
@@ -124,7 +126,8 @@ export const redirectLog = (config?: Config) => {
     const prefix = `[${new Date(timestamp).toISOString()}] ${icon} `;
     const prefixSpacer = ' '.repeat(prefix.length);
 
-    const logMessage = `${prefix}${chalk.bold(level)} (${source}): ${text}`;
+    // const logMessage = `${prefix}${chalk.bold(level)} (${source}): ${text}`;
+    const logMessage = `${prefix}${level} (${source}): ${text}`;
     log(color(logMessage));
     // recordLogMessage(logMessage);
 
@@ -135,7 +138,8 @@ export const redirectLog = (config?: Config) => {
     };
 
     if (url) {
-      logAdditional(`${chalk.bold('URL')}: ${url}`);
+      // logAdditional(`${chalk.bold('URL')}: ${url}`);
+      logAdditional(`${'URL'}: ${url}`);
     }
 
     if (stackTrace && lineNumber) {
@@ -150,69 +154,68 @@ export const redirectLog = (config?: Config) => {
     }
   };
 
-  const browserLaunchHandler = (filter?: Filter, timeout = 60000): BrowserLaunchHandlerType => async (
-    browser: Browser,
-    browserLaunchOptions: BrowserLaunchOptions,
-  ): Promise<BrowserLaunchOptions> => {
-    if (!isLog) {
-      return Promise.resolve(browserLaunchOptions);
-    }
-
-    const args = browserLaunchOptions.args || browserLaunchOptions;
-
-    if (!isChrome(browser)) {
-      debugLog(
-        `Warning: An unsupported browser family was used, output will not be logged to console: ${browser.family}`,
-      );
-
-      return Promise.resolve(browserLaunchOptions);
-    }
-
-    const rdp = ensureRdpPort(args);
-    const interval = 100;
-    const attempts = timeout / interval;
-
-    const CDP = require('chrome-remote-interface');
-    let attempt = 1;
-
-    const tryConnect = async () => {
-      if (attempt === 1) {
-        debugLog('Attempting to connect to Chrome Debugging Protocol');
+  const browserLaunchHandler =
+    (filter?: Filter, timeout = 60000): BrowserLaunchHandlerType =>
+    async (browser: Browser, browserLaunchOptions: BrowserLaunchOptions): Promise<BrowserLaunchOptions> => {
+      if (!isLog) {
+        return Promise.resolve(browserLaunchOptions);
       }
 
-      try {
-        const client = await new CDP({ port: rdp });
-        debugLog(`Connected to Chrome Debugging Protocol from ${attempt} attempt`);
+      const args = browserLaunchOptions.args || browserLaunchOptions;
 
-        /** captures logs from the browser */
-        client.Log.enable();
-        client.Log.entryAdded(logEntry(filter));
+      if (!isChrome(browser)) {
+        debugLog(
+          `Warning: An unsupported browser family was used, output will not be logged to console: ${browser.family}`,
+        );
 
-        /** captures logs from console.X calls */
-        client.Runtime.enable();
-        client.Runtime.consoleAPICalled(logConsole(filter));
+        return Promise.resolve(browserLaunchOptions);
+      }
 
-        client.on('disconnect', async () => {
-          attempt = 1;
-          debugLog('Chrome Debugging Protocol disconnected');
-          await tryConnect();
-        });
-      } catch (err) {
-        attempt++;
+      const rdp = ensureRdpPort(args);
+      const interval = 100;
+      const attempts = timeout / interval;
 
-        if (attempt < attempts) {
-          setTimeout(tryConnect, interval);
-        } else {
-          debugLog(`Could not connect to Debugging Protocol after ${attempts} attempts`);
-          debugLog(`Error: ${(err as Error).message}`);
+      const CDP = require('chrome-remote-interface');
+      let attempt = 1;
+
+      const tryConnect = async () => {
+        if (attempt === 1) {
+          debugLog('Attempting to connect to Chrome Debugging Protocol');
         }
-      }
+
+        try {
+          const client = await new CDP({ port: rdp });
+          debugLog(`Connected to Chrome Debugging Protocol from ${attempt} attempt`);
+
+          /** captures logs from the browser */
+          client.Log.enable();
+          client.Log.entryAdded(logEntry(filter));
+
+          /** captures logs from console.X calls */
+          client.Runtime.enable();
+          client.Runtime.consoleAPICalled(logConsole(filter));
+
+          client.on('disconnect', async () => {
+            attempt = 1;
+            debugLog('Chrome Debugging Protocol disconnected');
+            await tryConnect();
+          });
+        } catch (err) {
+          attempt++;
+
+          if (attempt < attempts) {
+            setTimeout(tryConnect, interval);
+          } else {
+            debugLog(`Could not connect to Debugging Protocol after ${attempts} attempts`);
+            debugLog(`Error: ${(err as Error).message}`);
+          }
+        }
+      };
+
+      await tryConnect();
+
+      return browserLaunchOptions;
     };
-
-    await tryConnect();
-
-    return browserLaunchOptions;
-  };
 
   const beforeBrowserLaunch = (on: Cypress.PluginEvents) => {
     const browserHandler = browserLaunchHandler(filterFunc(true));
