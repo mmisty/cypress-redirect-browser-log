@@ -94,6 +94,7 @@ redirectLogsBrowser({
 - [x] code coverage for cypress and jest, merge coverage
 - [x] formatting and eslint
 - [x] jest tests
+- [x] log uncaught exceptions from your Application
 - [ ] todo to file
 - [ ] todo config
 - [ ] todo docs

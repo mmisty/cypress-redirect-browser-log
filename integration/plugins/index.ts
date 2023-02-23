@@ -4,9 +4,10 @@ import { preprocessor } from './ts-preprocessor';
 import { existsSync, rmdirSync } from 'fs';
 import { resolve } from 'path';
 import { COVERAGE } from '../common/constants';
-import { filterFunc, redirectLog } from 'cy-local/plugins';
+import { redirectLog } from 'cy-local/plugins';
 import Browser = Cypress.Browser;
 import BrowserLaunchOptions = Cypress.BrowserLaunchOptions;
+import { filterFunc } from 'cy-local/plugins/filter';
 
 /**
  * Clear compiled js files from previous runs, otherwise coverage will be messed up

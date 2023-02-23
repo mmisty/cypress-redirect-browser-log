@@ -23,6 +23,46 @@ const browserApiEvent: LogEntry = {
   stackTrace: { callFrames: [] },
 };
 
+const exception = {
+  timestamp: 1677149215467.1072,
+  exceptionDetails: {
+    exceptionId: 1,
+    text: 'Uncaught',
+    lineNumber: 3,
+    columnNumber: 18,
+    scriptId: '27',
+    url: 'http://localhost:58708/mytest.com',
+    stackTrace: {
+      callFrames: [
+        { functionName: '', scriptId: '27', url: 'http://localhost:58708/mytest.com', lineNumber: 3, columnNumber: 18 },
+      ],
+    },
+    exception: {
+      type: 'object',
+      subtype: 'error',
+      className: 'Error',
+      description: 'Error: Special exception from code\n    at http://localhost:58708/mytest.com:4:19',
+      objectId: '9201113493710184414.7.1',
+      preview: {
+        type: 'object',
+        subtype: 'error',
+        description: 'Error: Special exception from code\n    at http://localhost:58708/mytest.com:4:19',
+        overflow: false,
+        properties: [
+          { name: 'docsUrl', type: 'undefined', value: 'undefined' },
+          {
+            name: 'stack',
+            type: 'string',
+            value: 'Error: Special exception from code\n    at http://localhost:58708/mytest.com:4:19',
+          },
+          { name: 'message', type: 'string', value: 'Special exception from code' },
+        ],
+      },
+    },
+    executionContextId: 7,
+  },
+};
+
 describe('redirect-logs', () => {
   describe('redirectLog inside', () => {
     it('logEntry', () => {
@@ -219,9 +259,9 @@ describe('redirect-logs', () => {
         event: { ...consoleApiEvent, type: 'error' },
         expected: {
           error: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |   error |  My message'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |   error |  STACK:'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |   error |      undefined'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  My message'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  STACK:'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |      undefined'],
           ],
         },
       },
@@ -230,9 +270,9 @@ describe('redirect-logs', () => {
         event: { ...consoleApiEvent, type: 'warning' },
         expected: {
           warn: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z | warning |  My message'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z | warning |  STACK:'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z | warning |      undefined'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning |  My message'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning |  STACK:'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning |      undefined'],
           ],
         },
       },
@@ -240,7 +280,7 @@ describe('redirect-logs', () => {
         desc: 'simple debug event',
         event: { ...consoleApiEvent, type: 'debug' },
         expected: {
-          debug: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |   debug |  My message']],
+          debug: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |    debug |  My message']],
         },
       },
       {
@@ -252,9 +292,9 @@ describe('redirect-logs', () => {
         },
         expected: {
           error: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |   error |  {"Error":{},"Event":"dsdsd"}'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |   error |  STACK:'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |   error |      undefined'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  {"Error":{},"Event":"dsdsd"}'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  STACK:'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |      undefined'],
           ],
         },
       },
@@ -271,7 +311,7 @@ describe('redirect-logs', () => {
           ],
         },
         expected: {
-          log: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |    test |  hello from test']],
+          log: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |     test |  hello from test']],
         },
       },
       {
@@ -287,7 +327,7 @@ describe('redirect-logs', () => {
           ],
         },
         expected: {
-          log: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |    test |  command: get, details: "test"']],
+          log: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |     test |  command: get, details: "test"']],
         },
       },
       {
@@ -303,7 +343,9 @@ describe('redirect-logs', () => {
           ],
         },
         expected: {
-          log: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |    test |  command: get -> Hi from test, details: "test"']],
+          log: [
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |     test |  command: get -> Hi from test, details: "test"'],
+          ],
         },
       },
       {
@@ -322,7 +364,7 @@ describe('redirect-logs', () => {
         expected: {
           log: [
             [
-              'FROM CHROME >> 2021-10-07T03:19:27.343Z |    test |  command: get -> Hi from test, details: {"obj2":"value"}',
+              'FROM CHROME >> 2021-10-07T03:19:27.343Z |     test |  command: get -> Hi from test, details: {"obj2":"value"}',
             ],
           ],
         },
@@ -337,6 +379,41 @@ describe('redirect-logs', () => {
       expect(console.warn?.mock.calls).toEqual(t.expected.warn ?? []);
       expect(console.debug?.mock.calls).toEqual(t.expected.debug ?? []);
     });
+
+  describe('console api with exception', () => {
+    its()
+      .each<{
+        event: Runtime.ExceptionThrownEventDataType;
+        expected: {
+          log?: string[][];
+          error?: string[][];
+          warn?: string[][];
+          debug?: string[][];
+        };
+      }>([
+        {
+          desc: 'simple event',
+          event: exception,
+          expected: {
+            error: [
+              [
+                'FROM CHROME >> 2023-02-23T10:46:55.467Z | UNCAUGHT | Error: Special exception from code\n' +
+                  'FROM CHROME >> 2023-02-23T10:46:55.467Z | UNCAUGHT |     at http://localhost:58708/mytest.com:4:19, details: {"callFrames":[{"functionName":"","scriptId":"27","url":"http://localhost:58708/mytest.com","lineNumber":3,"columnNumber":18}]}',
+              ],
+            ],
+          },
+        },
+      ])
+      .run(t => {
+        const console = consoleMock();
+        filterFunc(true)('console', t.event);
+
+        expect(console.log?.mock.calls).toEqual(t.expected.log ?? []);
+        expect(console.error?.mock.calls).toEqual(t.expected.error ?? []);
+        expect(console.warn?.mock.calls).toEqual(t.expected.warn ?? []);
+        expect(console.debug?.mock.calls).toEqual(t.expected.debug ?? []);
+      });
+  });
 
   its('browser api')
     .each<{
@@ -374,9 +451,9 @@ describe('redirect-logs', () => {
         },
         expected: {
           error: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |   error |  Message from Browser'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |   error |  STACK:'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |   error |      at //bbbburl:10 (my func)'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  Message from Browser'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  STACK:'],
+            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |      at //bbbburl:10 (my func)'],
           ],
         },
       },
@@ -390,6 +467,18 @@ describe('redirect-logs', () => {
       expect(console.warn?.mock.calls).toEqual(t.expected.warn ?? []);
       expect(console.debug?.mock.calls).toEqual(t.expected.debug ?? []);
     });
+
+  it('logException', () => {
+    const console = consoleMock();
+    const res = redirectLog();
+    res.logException()(exception);
+
+    expect(console.log?.mock.calls[0][0]).toContain('[2023-02-23T10:46:55.467Z] ⚠ console.Uncaught called');
+    expect(console.log?.mock.calls[1][0][0]).toContain(exception.exceptionDetails.exception.description);
+    expect(console.error?.mock.calls).toEqual([]);
+    expect(console.warn?.mock.calls).toEqual([]);
+    expect(console.debug?.mock.calls).toEqual([]);
+  });
 
   describe('incorrect events', () => {
     const circular = {

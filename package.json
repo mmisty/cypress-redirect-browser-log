@@ -1,6 +1,6 @@
 {
   "name": "cypress-redirect-browser-log",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "./index",
   "types": "./index.d.ts",
   "repository": "git@github.com:mmisty/cypress-redirect-browser-log.git",
@@ -73,6 +73,6 @@
     "webpack": "^5.75.0"
   },
   "dependencies": {
-    "chrome-remote-interface": "^0.31.3"
+    "chrome-remote-interface": "0.32.1"
   }
 }

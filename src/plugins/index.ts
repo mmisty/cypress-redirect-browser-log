@@ -2,8 +2,7 @@ import Browser = Cypress.Browser;
 import BrowserLaunchOptions = Cypress.BrowserLaunchOptions;
 import { stringifyWithCatch } from '../utils/json-utils';
 import { filterFunc } from './filter';
-
-export { filterFunc } from './filter';
+import type { Runtime } from 'inspector';
 
 export type Config = {
   isLog?: boolean;
@@ -110,6 +109,42 @@ export const redirectLog = (config?: Config) => {
     }
   };
 
+  // will use that when no filter specified
+  const logException = (eventFilter?: Filter) => params => {
+    if (eventFilter && !eventFilter('console', params)) {
+      return;
+    }
+
+    const { exceptionDetails, timestamp } = params as Runtime.ExceptionThrownEventDataType;
+
+    if (!exceptionDetails) {
+      return;
+    }
+
+    const { text, exception } = exceptionDetails;
+    const color = severityColors['error'];
+    const icon = severityIcons['error'];
+
+    const prefix = `[${new Date(timestamp).toISOString()}] ${icon} `;
+    const prefixSpacer = ' '.repeat(prefix.length);
+
+    const logMessage = `${prefix}console.${text ?? 'uncaught Error'} called`;
+
+    log(color([logMessage] as unknown as TemplateStringsArray));
+    // recordLogMessage(logMessage);
+
+    const logAdditional = msg => {
+      const logMsg = `${prefixSpacer}${msg}`;
+      log(color([logMsg] as unknown as TemplateStringsArray));
+      // recordLogMessage(logMessage);
+    };
+
+    if (exception) {
+      logAdditional(exception.description);
+      logAdditional(`  ${stringifyWithCatch(exception, true).split('\n').join(`\n${prefixSpacer}  `).trimRight()}`);
+    }
+  };
+
   const logEntry = (eventFilter?: Filter) => params => {
     if (eventFilter && !eventFilter('browser', params.entry)) {
       return;
@@ -194,6 +229,8 @@ export const redirectLog = (config?: Config) => {
           /** captures logs from console.X calls */
           client.Runtime.enable();
           client.Runtime.consoleAPICalled(logConsole(filter));
+          client.Runtime.exceptionThrown(logException(filter));
+          //client.Runtime.exceptionRevoked(logConsole(filter));
 
           client.on('disconnect', async () => {
             attempt = 1;
@@ -238,5 +275,6 @@ export const redirectLog = (config?: Config) => {
     // for testing
     logConsole,
     logEntry,
+    logException,
   };
 };

@@ -3,7 +3,7 @@ import type { LogTestType } from '../logging/log.types';
 import { stringifyWithCatch, tryParseJson } from '../utils/json-utils';
 import { appendMultiline, stringifyStack } from '../utils/string-utils';
 
-type LogType = 'error' | 'warning' | 'log' | 'info' | 'debug' | 'trace' | 'test';
+type LogType = 'error' | 'warning' | 'log' | 'info' | 'debug' | 'trace' | 'test' | 'UNCAUGHT';
 export type LogEntry = {
   text: string;
   level: string;
@@ -23,6 +23,14 @@ const warn = (message: unknown) => {
 const consoleApi = (obj: unknown): Runtime.ConsoleAPICalledEventDataType | null => {
   if (obj && typeof obj === 'object' && Object.getOwnPropertyNames(obj).includes('args')) {
     return obj as Runtime.ConsoleAPICalledEventDataType;
+  }
+
+  return null;
+};
+
+const exception = (obj: unknown): Runtime.ExceptionThrownEventDataType | null => {
+  if (obj && typeof obj === 'object' && Object.getOwnPropertyNames(obj).includes('exceptionDetails')) {
+    return obj as Runtime.ExceptionThrownEventDataType;
   }
 
   return null;
@@ -79,6 +87,11 @@ const logConsole = (message = '', options?: { logType: LogType; addition?: strin
         break;
       }
 
+      case 'UNCAUGHT': {
+        localConsole.error(`${msg}`);
+        break;
+      }
+
       case 'warning': {
         localConsole.warn(msg);
         break;
@@ -126,15 +139,7 @@ const logStack = (additionStr: string, logType: LogType, stackTrace: Runtime.Sta
 
 const isErrorOrWarn = (lt: LogType) => ['warning', 'error'].includes(lt);
 
-const logBrowser = (event: { type: string } & unknown, additionFn: (date: number, logtype: LogType) => string) => {
-  const browserLog = browserLogEntry(event);
-
-  if (!browserLog) {
-    warn(`NOT A browserLog EVENT: -------\n${stringifyWithCatch(event) || ''}`);
-
-    return;
-  }
-
+const logBrowser = (browserLog: LogEntry, additionFn: (date: number, logtype: LogType) => string) => {
   const logType = browserLog.level as LogType;
   const addition = additionFn(browserLog.timestamp, logType);
 
@@ -159,15 +164,30 @@ const logTest = (testLog: LogTestType, additionFn: (logtype: LogType) => string)
   });
 };
 
-const logConsoleApi = (event: { type: string } & unknown, additionFn: (date: number, logtype: LogType) => string) => {
-  const api = consoleApi(event);
+const logException = (
+  event: Runtime.ExceptionThrownEventDataType & unknown,
+  additionFn: (date: number, logtype: LogType) => string,
+) => {
+  const { timestamp, exceptionDetails } = event;
 
-  if (!api) {
-    warn(`NOT A CONSOLE API EVENT: -------\n${stringifyWithCatch(event) || ''}`);
+  const messageMsg = exceptionDetails?.exception?.description ?? '';
+  const logType: LogType = 'UNCAUGHT';
 
-    return;
-  }
+  const messageDetails = exceptionDetails?.stackTrace
+    ? `, details: ${stringifyWithCatch(exceptionDetails.stackTrace)}`
+    : '';
+  const addition = additionFn(timestamp ?? Date.now(), logType);
 
+  logConsole(`${messageMsg}${messageDetails}`, {
+    addition,
+    logType,
+  });
+};
+
+const logConsoleApi = (
+  api: Runtime.ConsoleAPICalledEventDataType,
+  additionFn: (date: number, logtype: LogType) => string,
+) => {
   api.args.forEach(t => {
     const testLog = convertToTestLog(t.value);
 
@@ -177,7 +197,7 @@ const logConsoleApi = (event: { type: string } & unknown, additionFn: (date: num
       return;
     }
 
-    const logType = getLogType(t.value, event.type);
+    const logType = getLogType(t.value, api.type);
     const addition = additionFn(api.timestamp, logType);
 
     const noMsg = `<No message parsed> Log object: ${stringifyWithCatch(t)}`;
@@ -196,14 +216,14 @@ const logConsoleApi = (event: { type: string } & unknown, additionFn: (date: num
 };
 
 const additionStrFn = (date: number, lt: LogType) => {
-  const logTypeStr = String(`    ${lt}`).slice(-7);
+  const logTypeStr = String(`    ${lt}`).slice(-8);
 
   return `${new Date(date).toISOString()} | ${logTypeStr} | `;
 };
 
 export const filterFunc =
   (isLog: boolean) =>
-  (type: string, event: { type: string } & unknown): boolean => {
+  (type: string, event: { type?: string; exceptionDetails?: unknown } & unknown): boolean => {
     // return true or false from this plugin to control if the event is logged
     // `type` is either `console` or `browser`
     // if `type` is `browser`, `event` is an object of the type `LogEntry`:
@@ -217,24 +237,43 @@ export const filterFunc =
       return false;
     }
 
-    switch (type) {
-      case 'console': {
-        logConsoleApi(event, additionStrFn);
-        break;
+    if (type === 'console') {
+      const exc = exception(event);
+
+      if (exc) {
+        logException(exc, additionStrFn);
+
+        return false;
+      }
+      const consoleEvent = consoleApi(event);
+
+      if (consoleEvent) {
+        logConsoleApi(consoleEvent, additionStrFn);
+
+        return false;
       }
 
-      case 'browser': {
-        logBrowser(event, additionStrFn);
+      warn(`NOT A CONSOLE API EVENT: -------\n${stringifyWithCatch(event) || ''}`);
 
-        break;
-      }
-
-      default: {
-        warn(`UNKNOWN LOG TYPE: ${type}`);
-        warn(event);
-        break;
-      }
+      return false;
     }
+
+    if (type === 'browser') {
+      const browserLog = browserLogEntry(event);
+
+      if (!browserLog) {
+        warn(`NOT A browserLog EVENT: -------\n${stringifyWithCatch(event) || ''}`);
+
+        return false;
+      }
+
+      logBrowser(browserLog, additionStrFn);
+
+      return false;
+    }
+
+    warn(`UNKNOWN LOG TYPE: ${type}`);
+    warn(event);
 
     return false;
   };
