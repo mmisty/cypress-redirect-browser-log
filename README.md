@@ -6,6 +6,11 @@ Install:
 
 Will connect to **chrome** debugging protocol and redirect logs to node process
 
+Will redirect browser console events like: 
+ - console API events
+ - uncaught exception
+ - some browser console events
+
 ## Setup
 1. setup support
 
