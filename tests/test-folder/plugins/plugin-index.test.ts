@@ -1,5 +1,6 @@
 import { consoleMock } from '../../mocks/console-mock';
-import { filterFunc, redirectLog } from '../../../src/plugins';
+import { redirectLog } from '../../../src/plugins';
+import { filterFunc } from '../../../src/plugins/filter';
 import Browser = Cypress.Browser;
 import BrowserLaunchOptions = Cypress.BrowserLaunchOptions;
 
