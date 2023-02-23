@@ -1,6 +1,6 @@
 {
   "name": "cypress-redirect-browser-log",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "main": "./index",
   "types": "./index.d.ts",
   "repository": "git@github.com:mmisty/cypress-redirect-browser-log.git",
