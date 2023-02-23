@@ -8,7 +8,7 @@ Will connect to **chrome** debugging protocol and redirect logs to node process
 
 Will redirect browser console events like: 
  - console API events
- - uncaught exception
+ - uncaught exceptions
  - some browser console events
 
 ## Setup
@@ -17,7 +17,7 @@ Will redirect browser console events like:
 ```typescript
 // support/index.ts or where is support located
 redirectLogsBrowser({
-  isLogFromTest: false,
+  isLogFromTest: false, // when 'true' will log all commands from cypress command log to output
 });
 ```
 
@@ -28,7 +28,8 @@ redirectLogsBrowser({
 setupNodeEvents(on, config){
   const redirect = redirectLog({isLog: true});
   redirect.beforeBrowserLaunch(on);
-  //...
+  
+  //... other existing configrations
   
   return config;
 }
