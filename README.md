@@ -1,15 +1,16 @@
 # cypress-redirect-browser-log
 
-Install:
-
-`npm i --save-dev cypress-redirect-browser-log`
-
 Will connect to **chrome** debugging protocol and redirect logs to node process
 
 Will redirect browser console events like: 
  - console API events
  - uncaught exceptions
  - some browser console events
+
+Install:
+
+`npm i --save-dev cypress-redirect-browser-log`
+
 
 ## Setup
 1. setup support
