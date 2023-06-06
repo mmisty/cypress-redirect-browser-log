@@ -56,7 +56,7 @@ redirectTestLogs({
 });
 ```
 
-- `isLogCommandDetails`:  set to true to see all commands with details from test when `isLogFromTest` is true
+- `isLogCommandDetails`:  set to true to see all commands with details from test
 
 To disable logs from tests you can 
 setup plugins as follows: 
@@ -68,7 +68,7 @@ redirectLog(on, config, handler => {
   });
 });
 
-// or specify only event you want to see
+// or specify only events you want to see
 redirectLog(on, config, ['excpetion', 'error', 'log', 'warn']);
 ```
 
