@@ -4,10 +4,9 @@ import { preprocessor } from './ts-preprocessor';
 import { existsSync, rmdirSync } from 'fs';
 import { resolve } from 'path';
 import { COVERAGE } from '../common/constants';
-import { redirectLog } from 'cy-local/plugins';
+import { redirectLog } from '../../src/plugins';
 import Browser = Cypress.Browser;
 import BrowserLaunchOptions = Cypress.BrowserLaunchOptions;
-import { filterFunc } from 'cy-local/plugins/filter';
 
 /**
  * Clear compiled js files from previous runs, otherwise coverage will be messed up
@@ -37,10 +36,21 @@ export const setupPlugins = (on: PluginEvents, config: PluginConfigOptions) => {
 
   on('file:preprocessor', preprocessor(isCov));
 
-  const redirect = redirectLog({ isLog: true });
+  const redirect = redirectLog(
+    config,
+    { defaultListeners: ['exception', 'error', 'warn', 'log', 'debug', 'test:log'] },
+    evEmit => {
+      evEmit.on('warn', warn => {
+        console.log(`${warn.date} ${warn.logType} ${warn.message}`);
+      });
 
-  // todo setup
-  const browserHandler = redirect.browserLaunchHandler(filterFunc(true));
+      evEmit.on('exception', exc => {
+        console.log(`${exc.date} ${exc.logType} ${exc.message}`);
+      });
+    },
+  );
+
+  const browserHandler = redirect.browserLaunchHandler();
 
   // Other option
   // redirect.beforeBrowserLaunch(on);

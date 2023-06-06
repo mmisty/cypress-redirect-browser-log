@@ -1,5 +1,5 @@
 import { visitHtml } from '../test-helper/helper';
-import { redirectLogsBrowser } from 'cy-local';
+import { redirectLogsBrowser } from '../../src';
 
 redirectLogsBrowser({
   isLogFromTest: false,

@@ -21,10 +21,12 @@ export default {
     '!**/node_modules/**',
     '!**/__tests__/**',
     '!**/mocks.ts',
+    '!**/*.types.ts',
+    '!types.ts',
   ],
 
   // The directory where Jest should output its coverage files
-  // coverageDirectory: "jest-coverage",
+  coverageDirectory: 'reports/coverage-jest',
 
   // Indicates which provider should be used to instrument code for coverage
   // coverageProvider: 'v8',

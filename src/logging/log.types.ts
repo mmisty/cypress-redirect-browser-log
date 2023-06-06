@@ -5,3 +5,5 @@ export type LogTestType = {
   message?: string;
   details?: unknown;
 };
+
+export type LogType = 'error' | 'warning' | 'log' | 'info' | 'debug' | 'trace' | 'test' | 'UNCAUGHT';

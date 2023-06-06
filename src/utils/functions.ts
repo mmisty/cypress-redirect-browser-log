@@ -54,3 +54,11 @@ export const parseBoolean = (check: string | boolean | undefined): boolean | und
       throw new Error(`Error during parsing boolean: unexpected type of value: ${typeof check}`);
   }
 };
+
+export const dateWithCatch = (timestamp: number): string => {
+  try {
+    return `${new Date(timestamp).toISOString()}`;
+  } catch (e) {
+    return '<could nod parse date>';
+  }
+};

@@ -12,6 +12,11 @@
     "moduleResolution": "node",
     "sourceMap": false,
     "isolatedModules": true,
-    "types": ["node", "jest", "cypress", "jest-test-each"]
+    "types": ["node", "jest", "cypress", "jest-test-each"],
+//    "baseUrl": "./",
+//    "paths": {
+//      "cy-local": ["../src"],
+//      "cy-local/*": ["../src/*"]
+//    }
   }
 }

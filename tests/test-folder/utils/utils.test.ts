@@ -36,7 +36,7 @@ describe('utils', () => {
             columnNumber: 10,
           },
         ],
-        expected: 'at http://bbb:10 (myFunc)',
+        expected: '  at http://bbb:10:10 (myFunc)',
       },
       {
         desc: 'one line',

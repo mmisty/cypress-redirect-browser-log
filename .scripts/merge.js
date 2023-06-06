@@ -65,6 +65,7 @@ function createReport(tempDir, reportDir, reporterArr){
   
   nyc.report().then(()=> {
     console.log("Report created");
+    console.log(`file://${reportDir}/lcov-report/index.html`)
   })
 }
 
