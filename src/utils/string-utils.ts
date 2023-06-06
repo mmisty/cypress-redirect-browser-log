@@ -12,4 +12,6 @@ export const appendMultiline = (addition: string, message: string): string => {
 };
 
 export const stringifyStack = (callFrames?: Runtime.CallFrame[]): string | undefined =>
-  callFrames?.map(c => `at ${c.url}:${c.lineNumber} (${c.functionName})`).join('\n');
+  callFrames
+    ?.map(c => `  at ${c.url}:${c.lineNumber}:${c.columnNumber} (${c.functionName || '<no functionName>'})`)
+    .join('\n');

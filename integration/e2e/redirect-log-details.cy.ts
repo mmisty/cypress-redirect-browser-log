@@ -1,10 +1,9 @@
 import { visitHtml } from '../test-helper/helper';
-import { redirectLogsBrowser } from 'cy-local';
+import { redirectLogsBrowser } from '../../src';
 
 redirectLogsBrowser({
-  isLogFromTest: {
-    isLogCommandDetails: true,
-  },
+  isLogFromTest: true,
+  isLogCommandDetails: true,
 });
 
 describe('test integration', () => {

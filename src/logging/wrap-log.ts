@@ -1,11 +1,21 @@
 import type { LogTestType } from './log.types';
 import { stringifyWithCatch } from '../utils/json-utils';
 
-export const wrapLogs = (options: { isLogDetails: boolean }): void => {
+export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
   const localConsole = console;
   const { isLogDetails } = options;
-  Cypress.on('test:before:run', (_attributes: Cypress.ObjectLike, test: Mocha.Test) => {
-    localConsole.debug(`======== TEST STARTED: ${test.fullTitle()}`);
+
+  Cypress.on('test:before:run', (testAttributes: Cypress.ObjectLike, test: Mocha.Test) => {
+    const logObj = (): LogTestType => ({
+      log: 'test',
+      logType: 'test',
+
+      command: undefined,
+      message: `======== TEST STARTED: ${test.fullTitle()}`,
+      details: undefined,
+    });
+
+    localConsole.log(JSON.stringify(logObj()));
   });
 
   Cypress.on('test:after:run', (_attributes: unknown, test: Mocha.Test) => {
@@ -34,7 +44,7 @@ export const wrapLogs = (options: { isLogDetails: boolean }): void => {
       details: test.err?.message,
     });
 
-    localConsole.debug(JSON.stringify(logObj()));
+    localConsole.log(JSON.stringify(logObj()));
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -67,6 +77,6 @@ export const wrapLogs = (options: { isLogDetails: boolean }): void => {
       details: isLogDetails ? details() : undefined,
     });
 
-    localConsole.debug(JSON.stringify(logObj()));
+    localConsole.log(JSON.stringify(logObj()));
   });
 };

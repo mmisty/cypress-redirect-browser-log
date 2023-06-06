@@ -1,211 +1,186 @@
+import type { Runtime } from 'inspector';
 import Browser = Cypress.Browser;
 import BrowserLaunchOptions = Cypress.BrowserLaunchOptions;
 import { stringifyWithCatch } from '../utils/json-utils';
-import { filterFunc } from './filter';
-import type { Runtime } from 'inspector';
+import { type ConsoleEvents, TypedEventEmitter } from './event-emitter';
+import { getExceptionDetails, isRuntimeException } from './converters/exception';
+import { getBrowserRes, isBrowserLogEntry, type LogEntry } from './converters/browser-log';
+import { getConsoleRes, isConsoleApi } from './converters/console-log';
+import { defaultHandlers } from './default-handlers';
+import type { LogType } from '../logging/log.types';
+import { PACK_NAME } from './pack';
 
 export type Config = {
-  isLog?: boolean;
-  redirectToFileTest?: {
-    logsPath: string;
-  };
+  defaultListeners: Array<keyof ConsoleEvents>;
 };
 
-export const redirectLog = (config?: Config) => {
-  const { isLog } = config ?? { isLog: true };
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  //const chalk = require('chalk');
+type BrowserLaunchHandlerType = (
+  browser: Browser,
+  browserLaunchOptions: BrowserLaunchOptions,
+) => Promise<BrowserLaunchOptions>;
 
-  // input
-  //  - out stream
-  //  - filter
+function isChrome(browser) {
+  return (
+    browser.family === 'chrome' ||
+    ['chrome', 'chromium', 'canary'].includes(browser.name) ||
+    (browser.family === 'chromium' && browser.name !== 'electron')
+  );
+}
 
-  const severityColors = {
-    verbose: a => a,
-    info: a => a,
-    warning: a => a,
-    error: a => a,
-  };
+function log(msg) {
+  console.log(`[${PACK_NAME}] ${msg}`);
+}
 
-  const severityIcons = {
-    verbose: ' ',
-    info: '🛈',
-    warning: '⚠',
-    error: '⚠',
-  };
+function debugLog(msg) {
+  // debug logs when DEBUG=cypress-redirect-browser-log
+  if (process.env.DEBUG && process.env.DEBUG.includes(PACK_NAME)) {
+    log(msg);
+  }
+}
 
-  type Filter = (type: string, event: { type: string } & unknown) => boolean;
+function ensureRdpPort(args) {
+  const existing = args.find(arg => arg.slice(0, 23) === '--remote-debugging-port');
 
-  type BrowserLaunchHandlerType = (
-    browser: Browser,
-    browserLaunchOptions: BrowserLaunchOptions,
-  ) => Promise<BrowserLaunchOptions>;
+  if (existing) {
+    debugLog(`existing port: ${existing}`);
 
-  function isChrome(browser) {
-    return (
-      browser.family === 'chrome' ||
-      ['chrome', 'chromium', 'canary'].includes(browser.name) ||
-      (browser.family === 'chromium' && browser.name !== 'electron')
-    );
+    return Number(existing.split('=')[1]);
   }
 
-  function log(msg) {
-    console.log(msg);
-  }
+  const port = 40000 + Math.round(Math.random() * 25000);
+  args.push(`--remote-debugging-port=${port}`);
+  debugLog(`new port: ${port}`);
 
-  function debugLog(msg) {
-    // suppress with DEBUG=browser-log-to-output
-    if (process.env.DEBUG && process.env.DEBUG.includes('browser-log-to-output')) {
+  return port;
+}
+
+export const transform =
+  (eventListener: TypedEventEmitter<ConsoleEvents>) =>
+  (params: Runtime.ConsoleAPICalledEventDataType | Runtime.ExceptionThrownEventDataType | { entry: LogEntry }) => {
+    if (isRuntimeException(params)) {
+      const res = getExceptionDetails(params);
+      eventListener.emit('exception', res);
+
       return;
     }
 
-    log(`[browser-log-to-output] ${msg}`);
-  }
+    if (isConsoleApi(params)) {
+      const res = getConsoleRes(params);
 
-  function ensureRdpPort(args) {
-    const existing = args.find(arg => arg.slice(0, 23) === '--remote-debugging-port');
+      if (!res) {
+        log(`NOT A CONSOLE API EVENT: -------\n${stringifyWithCatch(params) || ''}\n`);
 
-    if (existing) {
-      debugLog(`existing port: ${existing}`);
-
-      return Number(existing.split('=')[1]);
-    }
-
-    const port = 40000 + Math.round(Math.random() * 25000);
-    args.push(`--remote-debugging-port=${port}`);
-    log(`new port: ${port}`);
-
-    return port;
-  }
-
-  const logConsole = (eventFilter?: Filter) => params => {
-    if (eventFilter && !eventFilter('console', params)) {
-      return;
-    }
-
-    const { type, args, timestamp } = params;
-    const level = type === 'error' ? 'error' : 'verbose';
-    const color = severityColors[level];
-    const icon = severityIcons[level];
-
-    const prefix = `[${new Date(timestamp).toISOString()}] ${icon} `;
-    const prefixSpacer = ' '.repeat(prefix.length);
-
-    // const logMessage = `${prefix}${chalk.bold(`console.${type}`)} called`;
-    const logMessage = `${prefix}${`console.${type}`} called`;
-
-    log(color([logMessage] as unknown as TemplateStringsArray));
-    // recordLogMessage(logMessage);
-
-    const logAdditional = msg => {
-      const logMsg = `${prefixSpacer}${msg}`;
-      log(color([logMsg] as unknown as TemplateStringsArray));
-      // recordLogMessage(logMessage);
-    };
-
-    if (args) {
-      logAdditional('Arguments:');
-      logAdditional(`  ${stringifyWithCatch(args, true).split('\n').join(`\n${prefixSpacer}  `).trimRight()}`);
-    }
-  };
-
-  // will use that when no filter specified
-  const logException = (eventFilter?: Filter) => params => {
-    if (eventFilter && !eventFilter('console', params)) {
-      return;
-    }
-
-    const { exceptionDetails, timestamp } = params as Runtime.ExceptionThrownEventDataType;
-
-    if (!exceptionDetails) {
-      return;
-    }
-
-    const { text, exception } = exceptionDetails;
-    const color = severityColors['error'];
-    const icon = severityIcons['error'];
-
-    const prefix = `[${new Date(timestamp).toISOString()}] ${icon} `;
-    const prefixSpacer = ' '.repeat(prefix.length);
-
-    const logMessage = `${prefix}console.${text ?? 'uncaught Error'} called`;
-
-    log(color([logMessage] as unknown as TemplateStringsArray));
-    // recordLogMessage(logMessage);
-
-    const logAdditional = msg => {
-      const logMsg = `${prefixSpacer}${msg}`;
-      log(color([logMsg] as unknown as TemplateStringsArray));
-      // recordLogMessage(logMessage);
-    };
-
-    if (exception) {
-      logAdditional(exception.description);
-      logAdditional(`  ${stringifyWithCatch(exception, true).split('\n').join(`\n${prefixSpacer}  `).trimRight()}`);
-    }
-  };
-
-  const logEntry = (eventFilter?: Filter) => params => {
-    if (eventFilter && !eventFilter('browser', params.entry)) {
-      return;
-    }
-
-    const { level, source, text, timestamp, url, lineNumber, stackTrace, args } = params.entry;
-    let color = severityColors[level];
-
-    if (typeof color !== 'function') {
-      color = (msg: string) => msg;
-    }
-    const icon = severityIcons[level];
-
-    const prefix = `[${new Date(timestamp).toISOString()}] ${icon} `;
-    const prefixSpacer = ' '.repeat(prefix.length);
-
-    // const logMessage = `${prefix}${chalk.bold(level)} (${source}): ${text}`;
-    const logMessage = `${prefix}${level} (${source}): ${text}`;
-    log(color(logMessage));
-    // recordLogMessage(logMessage);
-
-    const logAdditional = msg => {
-      const additionalLogMessage = `${prefixSpacer}${msg}`;
-      log(color(additionalLogMessage));
-      // recordLogMessage(additionalLogMessage);
-    };
-
-    if (url) {
-      // logAdditional(`${chalk.bold('URL')}: ${url}`);
-      logAdditional(`${'URL'}: ${url}`);
-    }
-
-    if (stackTrace && lineNumber) {
-      logAdditional(`Stack trace line number: ${lineNumber}`);
-      logAdditional(`Stack trace description: ${stackTrace.description}`);
-      logAdditional(`Stack call frames: ${stackTrace.callFrames.join(', ')}`);
-    }
-
-    if (args) {
-      logAdditional('Arguments:');
-      logAdditional(`  ${JSON.stringify(args, null, 2).split('\n').join(`\n${prefixSpacer}  `).trimRight()}`);
-    }
-  };
-
-  const browserLaunchHandler =
-    (filter?: Filter, timeout = 60000): BrowserLaunchHandlerType =>
-    async (browser: Browser, browserLaunchOptions: BrowserLaunchOptions): Promise<BrowserLaunchOptions> => {
-      if (!isLog) {
-        return Promise.resolve(browserLaunchOptions);
+        return;
       }
 
+      if (res.source === 'console:test') {
+        eventListener.emit('test:log', res);
+      } else {
+        const ce = getConsoleEventsFromType(res.logType);
+
+        if (ce) {
+          eventListener.emit(ce, res);
+        }
+      }
+
+      return;
+    }
+
+    if (isBrowserLogEntry(params)) {
+      const res = getBrowserRes(params.entry);
+      const ce = getConsoleEventsFromType(res.logType);
+
+      if (ce) {
+        eventListener.emit(ce, res);
+      }
+
+      return;
+    }
+
+    log('Unknown EVENT: -------\n');
+    log(stringifyWithCatch(params));
+  };
+
+const getConsoleEventsFromType = (type: LogType): keyof ConsoleEvents | undefined => {
+  switch (type) {
+    case 'debug': {
+      return 'debug';
+    }
+
+    case 'warning': {
+      return 'warn';
+    }
+
+    case 'error': {
+      return 'error';
+    }
+
+    case 'log': {
+      return 'log';
+    }
+
+    default: {
+      return undefined;
+    }
+  }
+};
+
+export const redirectLog = (
+  cyConfig: Cypress.PluginConfigOptions,
+  config: Config,
+  handler?: (eventEmitter: TypedEventEmitter<ConsoleEvents>) => void,
+) => {
+  const defaultListenersRegister: (keyof ConsoleEvents)[] = ['exception', 'error', 'warn', 'log', 'test:log'];
+  const { defaultListeners } = config ?? { defaultListeners: defaultListenersRegister };
+  const isLog = cyConfig.env['REDIRECT_BROWSER_LOG'] === 'true' || cyConfig.env['REDIRECT_BROWSER_LOG'] === true;
+  const eventEmitter = new TypedEventEmitter();
+
+  if (!isLog) {
+    log('Logging from browser is off, to turn on set REDIRECT_BROWSER_LOG environment variable to true');
+
+    return {
+      beforeBrowserLaunch: () => {
+        // ignore sicne no logging
+      },
+      browserLaunchHandler:
+        (): BrowserLaunchHandlerType =>
+        async (browser: Browser, browserLaunchOptions: BrowserLaunchOptions): Promise<BrowserLaunchOptions> => {
+          return Promise.resolve(browserLaunchOptions);
+        },
+    };
+  }
+  log('Logging from browser is on, to turn off set REDIRECT_BROWSER_LOG environment variable to false');
+  // register event handler from user
+  handler?.(eventEmitter);
+
+  const existingEvents = eventEmitter.eventNames();
+
+  // register empty error handler
+  eventEmitter.on('error', () => {
+    // ignore, otherwise throws
+  });
+
+  const events = defaultListeners.filter(y => !existingEvents.some(x => x.toString().indexOf(y) !== -1));
+
+  if (events.length > 0) {
+    debugLog(`Registering default console event handlers: ${events.join(', ')}`);
+    events.forEach(defaultListnr => {
+      defaultHandlers(defaultListnr, eventEmitter);
+    });
+  }
+
+  const browserLaunchHandler =
+    (timeout = 60000): BrowserLaunchHandlerType =>
+    async (browser: Browser, browserLaunchOptions: BrowserLaunchOptions): Promise<BrowserLaunchOptions> => {
       const args = browserLaunchOptions.args || browserLaunchOptions;
 
       if (!isChrome(browser)) {
-        debugLog(
-          `Warning: An unsupported browser family was used, output will not be logged to console: ${browser.family}`,
-        );
+        log(`Warning: An unsupported browser family was used, output will not be logged to console: ${browser.family}`);
 
         return Promise.resolve(browserLaunchOptions);
       }
 
+      const anyConsoleEvent = transform(eventEmitter);
       const rdp = ensureRdpPort(args);
       const interval = 100;
       const attempts = timeout / interval;
@@ -224,13 +199,12 @@ export const redirectLog = (config?: Config) => {
 
           /** captures logs from the browser */
           client.Log.enable();
-          client.Log.entryAdded(logEntry(filter));
+          client.Log.entryAdded(anyConsoleEvent);
 
           /** captures logs from console.X calls */
           client.Runtime.enable();
-          client.Runtime.consoleAPICalled(logConsole(filter));
-          client.Runtime.exceptionThrown(logException(filter));
-          //client.Runtime.exceptionRevoked(logConsole(filter));
+          client.Runtime.consoleAPICalled(anyConsoleEvent);
+          client.Runtime.exceptionThrown(anyConsoleEvent);
 
           client.on('disconnect', async () => {
             attempt = 1;
@@ -255,7 +229,7 @@ export const redirectLog = (config?: Config) => {
     };
 
   const beforeBrowserLaunch = (on: Cypress.PluginEvents) => {
-    const browserHandler = browserLaunchHandler(filterFunc(true));
+    const browserHandler = browserLaunchHandler();
 
     on('before:browser:launch', (browser: Browser, browserLaunchOptions: BrowserLaunchOptions) => {
       return browserHandler(browser, browserLaunchOptions);
@@ -272,9 +246,5 @@ export const redirectLog = (config?: Config) => {
      * when no need to do anything else with 'before:browser:launch'
      */
     beforeBrowserLaunch,
-    // for testing
-    logConsole,
-    logEntry,
-    logException,
   };
 };

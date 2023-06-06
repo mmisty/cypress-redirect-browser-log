@@ -1,535 +1,567 @@
 import type { Runtime } from 'inspector';
 import { consoleMock } from '../../mocks/console-mock';
-import { filterFunc, LogEntry } from '../../../src/plugins/filter';
-import { redirectLog } from '../../../src/plugins';
-
-const consoleApiEvent: Runtime.ConsoleAPICalledEventDataType = {
-  type: 'log',
-  args: [
-    {
-      type: 'string',
-      value: 'My message',
-    },
-  ],
-  timestamp: 1633576767343,
-  executionContextId: 2,
-};
-
-const browserApiEvent: LogEntry = {
-  level: 'log',
-  text: 'Message from Browser',
-  timestamp: 1633576767343,
-  url: 'some url',
-  stackTrace: { callFrames: [] },
-};
-
-const exception = {
-  timestamp: 1677149215467.1072,
-  exceptionDetails: {
-    exceptionId: 1,
-    text: 'Uncaught',
-    lineNumber: 3,
-    columnNumber: 18,
-    scriptId: '27',
-    url: 'http://localhost:58708/mytest.com',
-    stackTrace: {
-      callFrames: [
-        { functionName: '', scriptId: '27', url: 'http://localhost:58708/mytest.com', lineNumber: 3, columnNumber: 18 },
-      ],
-    },
-    exception: {
-      type: 'object',
-      subtype: 'error',
-      className: 'Error',
-      description: 'Error: Special exception from code\n    at http://localhost:58708/mytest.com:4:19',
-      objectId: '9201113493710184414.7.1',
-      preview: {
-        type: 'object',
-        subtype: 'error',
-        description: 'Error: Special exception from code\n    at http://localhost:58708/mytest.com:4:19',
-        overflow: false,
-        properties: [
-          { name: 'docsUrl', type: 'undefined', value: 'undefined' },
-          {
-            name: 'stack',
-            type: 'string',
-            value: 'Error: Special exception from code\n    at http://localhost:58708/mytest.com:4:19',
-          },
-          { name: 'message', type: 'string', value: 'Special exception from code' },
-        ],
-      },
-    },
-    executionContextId: 7,
-  },
-};
+import { transform } from '../../../src/plugins';
+import { ConsoleEvents, TypedEventEmitter } from '../../../src/plugins/event-emitter';
+import type { LogEntry } from '../../../src/plugins/converters/browser-log';
+import { defaultHandlers } from '../../../src/plugins/default-handlers';
 
 describe('redirect-logs', () => {
-  describe('redirectLog inside', () => {
-    it('logEntry', () => {
-      const console = consoleMock();
-      const res = redirectLog();
-      res.logEntry()({ entry: browserApiEvent });
+  const circular = {
+    prop1: 'abc',
+    get prop2() {
+      return circular;
+    },
+  };
 
-      expect(console.log?.mock.calls[0][0]).toContain('[2021-10-07T03:19:27.343Z] undefined');
-      expect(console.log?.mock.calls[0][0]).toContain(browserApiEvent.text);
-      expect(console.error?.mock.calls).toEqual([]);
-      expect(console.warn?.mock.calls).toEqual([]);
-      expect(console.debug?.mock.calls).toEqual([]);
-    });
+  const consoleApiEvent: Runtime.ConsoleAPICalledEventDataType = {
+    type: 'log',
+    args: [
+      {
+        type: 'string',
+        value: 'My message',
+      },
+    ],
+    timestamp: 1633576767343,
+    executionContextId: 2,
+  };
 
-    it('logEntry filterFunc', () => {
-      const console = consoleMock();
-      const res = redirectLog();
-      res.logEntry(filterFunc(true))({ entry: browserApiEvent });
+  const browserApiEvent: LogEntry = {
+    level: 'log',
+    text: 'Message from Browser',
+    timestamp: 1633576767343,
+    url: 'some url',
+    stackTrace: { callFrames: [] },
+  };
 
-      expect(console.log?.mock.calls[0][0]).toContain(
-        `FROM CHROME >> 2021-10-07T03:19:27.343Z |     log |  ${browserApiEvent.text}`,
-      );
-
-      expect(console.error?.mock.calls).toEqual([]);
-      expect(console.warn?.mock.calls).toEqual([]);
-      expect(console.debug?.mock.calls).toEqual([]);
-    });
-
-    it('logEntry with stack', () => {
-      const console = consoleMock();
-      const res = redirectLog();
-      res.logEntry()({
-        entry: {
-          level: 'log',
-          text: 'Message from Browser',
-          timestamp: 1633576767343,
-          url: 'some url',
-          stackTrace: { callFrames: [] },
-          lineNumber: 4,
-        },
-      });
-
-      expect(console.error?.mock.calls).toEqual([]);
-      expect(console.warn?.mock.calls).toEqual([]);
-      expect(console.debug?.mock.calls).toEqual([]);
-
-      expect(console.log?.mock.calls[0][0]).toContain('Message from Browser');
-      expect(console.log?.mock.calls[1][0]).toContain('some url');
-      expect(console.log?.mock.calls[2]).toEqual(['                                     Stack trace line number: 4']);
-      expect(console.log?.mock.calls[3]).toEqual([
-        '                                     Stack trace description: undefined',
-      ]);
-      expect(console.log?.mock.calls[4]).toEqual(['                                     Stack call frames: ']);
-    });
-
-    it('logEntry with args', () => {
-      const console = consoleMock();
-      const res = redirectLog();
-      res.logEntry()({
-        entry: {
-          level: 'log',
-          text: 'Message from Browser',
-          timestamp: 1633576767343,
-          url: 'some url',
-          stackTrace: { callFrames: [] },
-          lineNumber: 4,
-          args: ['mya1', 'mya2'],
-        },
-      });
-
-      expect(console.error?.mock.calls).toEqual([]);
-      expect(console.warn?.mock.calls).toEqual([]);
-      expect(console.debug?.mock.calls).toEqual([]);
-      expect(console.log?.mock.calls[0][0]).toContain('Message from Browser');
-      expect(console.log?.mock.calls[1][0]).toContain('some url');
-      expect(console.log?.mock.calls[2]).toEqual(['                                     Stack trace line number: 4']);
-      expect(console.log?.mock.calls[3]).toEqual([
-        '                                     Stack trace description: undefined',
-      ]);
-      expect(console.log?.mock.calls[4]).toEqual(['                                     Stack call frames: ']);
-      expect(console.log?.mock.calls[5]).toEqual(['                                     Arguments:']);
-      expect(console.log?.mock.calls[6]).toEqual([
-        '                                       [\n                                         "mya1",\n                                         "mya2"\n                                       ]',
-      ]);
-    });
-
-    it('logConsole', () => {
-      const console = consoleMock();
-      const res = redirectLog();
-      res.logConsole()(consoleApiEvent);
-
-      expect(console.warn?.mock.calls[0]).toEqual(undefined);
-      expect(console.error?.mock.calls[0]).toEqual(undefined);
-      expect(console.debug?.mock.calls[0]).toEqual(undefined);
-
-      expect(console.log?.mock.calls[0][0][0]).toContain('[2021-10-07T03:19:27.343Z]');
-      expect(console.log?.mock.calls[0][0][0]).toContain('console.log');
-      expect(console.log?.mock.calls[0][0][0]).toContain('called');
-    });
-
-    it('logConsole filter', () => {
-      const console = consoleMock();
-      const res = redirectLog();
-      res.logConsole(filterFunc(true))(consoleApiEvent);
-
-      expect(console.warn?.mock.calls[0]).toEqual(undefined);
-      expect(console.error?.mock.calls[0]).toEqual(undefined);
-      expect(console.debug?.mock.calls[0]).toEqual(undefined);
-
-      expect(console.log?.mock.calls[0]).toEqual(['FROM CHROME >> 2021-10-07T03:19:27.343Z |     log |  My message']);
-    });
-
-    it('logConsole error', () => {
-      const console = consoleMock();
-      const res = redirectLog();
-      res.logConsole()({
-        type: 'error',
-        args: [
+  const exception = {
+    timestamp: 1677149215467.1072,
+    exceptionDetails: {
+      exceptionId: 1,
+      text: 'Uncaught',
+      lineNumber: 3,
+      columnNumber: 18,
+      scriptId: '27',
+      url: 'http://localhost:58708/mytest.com',
+      stackTrace: {
+        callFrames: [
           {
-            type: 'string',
-            value: 'My message',
+            functionName: '',
+            scriptId: '27',
+            url: 'http://localhost:58708/mytest.com',
+            lineNumber: 3,
+            columnNumber: 18,
           },
         ],
-        timestamp: 1633576767343,
-        executionContextId: 2,
-      });
+      },
+      exception: {
+        type: 'object',
+        subtype: 'error',
+        className: 'Error',
+        description: 'Error: Special exception from code\n    at http://localhost:58708/mytest.com:4:19',
+        objectId: '9201113493710184414.7.1',
+        preview: {
+          type: 'object',
+          subtype: 'error',
+          description: 'Error: Special exception from code\n    at http://localhost:58708/mytest.com:4:19',
+          overflow: false,
+          properties: [
+            { name: 'docsUrl', type: 'undefined', value: 'undefined' },
+            {
+              name: 'stack',
+              type: 'string',
+              value: 'Error: Special exception from code\n    at http://localhost:58708/mytest.com:4:19',
+            },
+            { name: 'message', type: 'string', value: 'Special exception from code' },
+          ],
+        },
+      },
+      executionContextId: 7,
+    },
+  };
 
-      expect(console.warn?.mock.calls[0]).toEqual(undefined);
-      expect(console.error?.mock.calls[0]).toEqual(undefined);
-      expect(console.debug?.mock.calls[0]).toEqual(undefined);
-
-      expect(console.log?.mock.calls[0][0]).toContain('[2021-10-07T03:19:27.343Z] ⚠ console.error called');
-    });
+  let consoleMocked;
+  let ev: TypedEventEmitter<ConsoleEvents>;
+  beforeEach(() => {
+    consoleMocked = consoleMock();
+    ev = new TypedEventEmitter<ConsoleEvents>();
   });
 
-  it('Should be no logging when logging switched off', () => {
-    const console = consoleMock();
-    filterFunc(false)('console', consoleApiEvent);
-
-    expect(console.log?.mock.calls[0]).toEqual(undefined);
-    expect(console.error?.mock.calls[0]).toEqual(undefined);
-    expect(console.warn?.mock.calls[0]).toEqual(undefined);
-    expect(console.debug?.mock.calls[0]).toEqual(undefined);
-  });
-
-  its('unknown event')
-    .each([
-      {
-        desc: 'simple event',
-        event: { type: 'Some Ev' },
-        expected: {
-          warn: [['UNKNOWN LOG TYPE: other'], [{ type: 'Some Ev' }]],
-        },
-      },
-    ])
-    .run(t => {
-      const console = consoleMock();
-      filterFunc(true)('other', t.event);
-
-      expect(console.log?.mock.calls).toEqual([]);
-      expect(console.error?.mock.calls).toEqual([]);
-      expect(console.warn?.mock.calls).toEqual(t.expected.warn ?? []);
-      expect(console.debug?.mock.calls).toEqual([]);
-    });
-
-  its('console api')
-    .each<{
-      event: Runtime.ConsoleAPICalledEventDataType;
-      expected: {
-        log?: string[][];
-        error?: string[][];
-        warn?: string[][];
-        debug?: string[][];
-      };
-    }>([
-      {
-        desc: 'simple event',
-        event: consoleApiEvent,
-        expected: {
-          log: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |     log |  My message']],
-        },
-      },
-      {
-        desc: 'simple event - no value',
-        event: { ...consoleApiEvent, args: [{ type: 'string' }] },
-        expected: {
-          log: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |     log |  <No message parsed> Log object: {"type":"string"}'],
-          ],
-        },
-      },
-      {
-        desc: 'simple error event',
-        event: { ...consoleApiEvent, type: 'error' },
-        expected: {
-          error: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  My message'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  STACK:'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |      undefined'],
-          ],
-        },
-      },
-      {
-        desc: 'simple warn event',
-        event: { ...consoleApiEvent, type: 'warning' },
-        expected: {
-          warn: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning |  My message'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning |  STACK:'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning |      undefined'],
-          ],
-        },
-      },
-      {
-        desc: 'simple debug event',
-        event: { ...consoleApiEvent, type: 'debug' },
-        expected: {
-          debug: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |    debug |  My message']],
-        },
-      },
-      {
-        desc: 'simple uncaught error event',
-        event: {
-          ...consoleApiEvent,
-          type: 'log',
-          args: [{ type: 'log', value: '{"Error":{},"Event":"dsdsd"}' }],
-        },
-        expected: {
-          error: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  {"Error":{},"Event":"dsdsd"}'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  STACK:'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |      undefined'],
-          ],
-        },
-      },
-      {
-        desc: 'simple test event',
-        event: {
-          ...consoleApiEvent,
-          type: 'log',
-          args: [
-            {
-              type: 'string',
-              value: '{"log":"test", "logType":"test", "message":"hello from test"}',
-            },
-          ],
-        },
-        expected: {
-          log: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |     test |  hello from test']],
-        },
-      },
-      {
-        desc: 'test event - no message',
-        event: {
-          ...consoleApiEvent,
-          type: 'log',
-          args: [
-            {
-              type: 'string',
-              value: '{"log":"test", "logType":"test","details":"test","command":"get"}',
-            },
-          ],
-        },
-        expected: {
-          log: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |     test |  command: get, details: "test"']],
-        },
-      },
-      {
-        desc: 'test event - full',
-        event: {
-          ...consoleApiEvent,
-          type: 'log',
-          args: [
-            {
-              type: 'string',
-              value: '{"log":"test", "logType":"test","message":"Hi from test","details":"test","command":"get"}',
-            },
-          ],
-        },
-        expected: {
-          log: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |     test |  command: get -> Hi from test, details: "test"'],
-          ],
-        },
-      },
-      {
-        desc: 'test event - full with json details',
-        event: {
-          ...consoleApiEvent,
-          type: 'log',
-          args: [
-            {
-              type: 'string',
-              value:
-                '{"log":"test", "logType":"test","message":"Hi from test","details":"{\\"obj2\\":\\"value\\"}","command":"get"}',
-            },
-          ],
-        },
-        expected: {
-          log: [
-            [
-              'FROM CHROME >> 2021-10-07T03:19:27.343Z |     test |  command: get -> Hi from test, details: {"obj2":"value"}',
-            ],
-          ],
-        },
-      },
-    ])
-    .run(t => {
-      const console = consoleMock();
-      filterFunc(true)('console', t.event);
-
-      expect(console.log?.mock.calls).toEqual(t.expected.log ?? []);
-      expect(console.error?.mock.calls).toEqual(t.expected.error ?? []);
-      expect(console.warn?.mock.calls).toEqual(t.expected.warn ?? []);
-      expect(console.debug?.mock.calls).toEqual(t.expected.debug ?? []);
-    });
-
-  describe('console api with exception', () => {
-    its()
-      .each<{
-        event: Runtime.ExceptionThrownEventDataType;
-        expected: {
-          log?: string[][];
-          error?: string[][];
-          warn?: string[][];
-          debug?: string[][];
-        };
-      }>([
+  describe('default log', () => {
+    its('browser event')
+      .each([
         {
-          desc: 'simple event',
-          event: exception,
-          expected: {
-            error: [
-              [
-                'FROM CHROME >> 2023-02-23T10:46:55.467Z | UNCAUGHT | Error: Special exception from code\n' +
-                  'FROM CHROME >> 2023-02-23T10:46:55.467Z | UNCAUGHT |     at http://localhost:58708/mytest.com:4:19, details: {"callFrames":[{"functionName":"","scriptId":"27","url":"http://localhost:58708/mytest.com","lineNumber":3,"columnNumber":18}]}',
-              ],
-            ],
+          desc: 'browserApiEvent with log message, logging only log - console should have message',
+          event: { entry: browserApiEvent },
+          levels: ['log'] as (keyof ConsoleEvents)[],
+          logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | log | Message from Browser']],
+          warnExp: [],
+          errExp: [],
+          debugExp: [],
+        },
+        {
+          desc: 'browserApiEvent with trace message, logging only log - console should NOT have message',
+          event: { entry: browserApiEvent },
+          levels: ['trace'] as (keyof ConsoleEvents)[],
+          logExp: [],
+          warnExp: [],
+          errExp: [],
+          debugExp: [],
+        },
+        {
+          desc: 'browserApiEvent with table message, logging only log - console should NOT have message',
+          event: { entry: browserApiEvent },
+          levels: ['table'] as (keyof ConsoleEvents)[],
+          logExp: [],
+          warnExp: [],
+          errExp: [],
+          debugExp: [],
+        },
+        {
+          desc: 'browserApiEvent with debug message, logging only log - console should NOT have message',
+          event: { entry: browserApiEvent },
+          levels: ['debug'] as (keyof ConsoleEvents)[],
+          logExp: [],
+          warnExp: [],
+          errExp: [],
+          debugExp: [],
+        },
+        {
+          desc: 'browserApiEvent with log message, logging only errors - console should be empty',
+          event: { entry: browserApiEvent },
+          levels: ['error'] as (keyof ConsoleEvents)[],
+          logExp: [],
+          warnExp: [],
+          errExp: [],
+          debugExp: [],
+        },
+        {
+          desc: 'browserApiEvent with log message, logging only warns - console should be empty',
+          event: { entry: browserApiEvent },
+          levels: ['warn'] as (keyof ConsoleEvents)[],
+          logExp: [],
+          warnExp: [],
+          errExp: [],
+          debugExp: [],
+        },
+        {
+          desc: 'browserApiEvent with error message, logging only errors - console should have message error',
+          event: {
+            entry: {
+              ...browserApiEvent,
+              level: 'error',
+              stackTrace: {
+                callFrames: [
+                  {
+                    functionName: '',
+                    scriptId: '27',
+                    url: 'http://localhost:58708/mytest.com',
+                    lineNumber: 3,
+                    columnNumber: 18,
+                  },
+                ],
+              },
+            },
           },
+          levels: ['error'] as (keyof ConsoleEvents)[],
+          logExp: [],
+          warnExp: [],
+          errExp: [
+            ['FROM CHROME >>  2021-10-07T03:19:27.343Z | error | Message from Browser'],
+            [
+              'FROM CHROME >>  2021-10-07T03:19:27.343Z | error |   at http://localhost:58708/mytest.com:3:18 (<no functionName>)',
+            ],
+          ],
+          debugExp: [],
+        },
+        {
+          desc: 'browserApiEvent with warn message, logging only warns - console should have message warn',
+          event: {
+            entry: {
+              ...browserApiEvent,
+              level: 'warning',
+              stackTrace: {
+                callFrames: [
+                  {
+                    functionName: 'myFunc',
+                    scriptId: '27',
+                    url: 'http://localhost:58708/mytest.com',
+                    lineNumber: 3,
+                    columnNumber: 18,
+                  },
+                ],
+              },
+            },
+          },
+          levels: ['warn'] as (keyof ConsoleEvents)[],
+          logExp: [],
+          warnExp: [
+            ['FROM CHROME >>  2021-10-07T03:19:27.343Z | warning | Message from Browser'],
+            [
+              'FROM CHROME >>  2021-10-07T03:19:27.343Z | warning |   at http://localhost:58708/mytest.com:3:18 (myFunc)',
+            ],
+          ],
+          errExp: [],
+          debugExp: [],
+        },
+        {
+          desc: 'browserApiEvent with error message, logging only errors - console should have message error (no stack)',
+          event: { entry: { ...browserApiEvent, level: 'error' } },
+          levels: ['error'] as (keyof ConsoleEvents)[],
+          logExp: [],
+          warnExp: [],
+          errExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | error | Message from Browser']],
+          debugExp: [],
+        },
+        {
+          desc: 'browserApiEvent with error message - no stack as object',
+          event: { entry: { ...browserApiEvent, level: 'error', stackTrace: undefined } },
+          levels: ['error'] as (keyof ConsoleEvents)[],
+          logExp: [],
+          warnExp: [],
+          errExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | error | Message from Browser']],
+          debugExp: [],
         },
       ])
       .run(t => {
-        const console = consoleMock();
-        filterFunc(true)('console', t.event);
+        t.levels.forEach(lev => defaultHandlers(lev, ev));
+        transform(ev)(t.event);
 
-        expect(console.log?.mock.calls).toEqual(t.expected.log ?? []);
-        expect(console.error?.mock.calls).toEqual(t.expected.error ?? []);
-        expect(console.warn?.mock.calls).toEqual(t.expected.warn ?? []);
-        expect(console.debug?.mock.calls).toEqual(t.expected.debug ?? []);
+        expect(consoleMocked.log?.mock.calls).toEqual(t.logExp);
+        expect(consoleMocked.debug?.mock.calls).toEqual(t.debugExp);
+        expect(consoleMocked.warn?.mock.calls).toEqual(t.warnExp);
+        expect(consoleMocked.error?.mock.calls).toEqual(t.errExp);
       });
-  });
 
-  its('browser api')
-    .each<{
-      event: LogEntry;
-      expected: {
-        log?: string[][];
-        error?: string[][];
-        warn?: string[][];
-        debug?: string[][];
-      };
-    }>([
-      {
-        desc: 'simple event',
-        event: browserApiEvent,
-        expected: {
-          log: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |     log |  Message from Browser']],
-        },
-      },
-      {
-        desc: 'error event with stack',
-        event: {
-          ...browserApiEvent,
-          level: 'error',
-          stackTrace: {
-            callFrames: [
-              {
-                functionName: 'my func',
-                scriptId: 'scriptId',
-                url: '//bbbburl',
-                lineNumber: 10,
-                columnNumber: 10,
-              },
-            ],
+    describe('console event', () => {
+      its('console event')
+        .each([
+          {
+            desc: 'consoleApiEvent with log message, logging only log - console should have message',
+            event: consoleApiEvent,
+            levels: ['log'] as (keyof ConsoleEvents)[],
+            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | log | My message']],
+            warnExp: [],
+            errExp: [],
+            debugExp: [],
           },
-        },
-        expected: {
-          error: [
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  Message from Browser'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |  STACK:'],
-            ['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |      at //bbbburl:10 (my func)'],
-          ],
-        },
-      },
-    ])
-    .run(t => {
-      const console = consoleMock();
-      filterFunc(true)('browser', { type: 'log', ...t.event });
+          {
+            desc: 'consoleApiEvent with log message, no value',
+            event: { ...consoleApiEvent, args: [{ type: 'string' }] },
+            levels: ['log'] as (keyof ConsoleEvents)[],
+            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | log | <No message parsed> {"type":"string"}']],
+            warnExp: [],
+            errExp: [],
+            debugExp: [],
+          },
+          {
+            desc: 'consoleApiEvent with warning message',
+            event: { ...consoleApiEvent, type: 'warning' },
+            levels: ['warn'] as (keyof ConsoleEvents)[],
+            logExp: [],
+            warnExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | warning | My message']],
+            errExp: [],
+            debugExp: [],
+          },
+          {
+            desc: 'consoleApiEvent with debug message',
+            event: { ...consoleApiEvent, type: 'debug' },
+            levels: ['debug'] as (keyof ConsoleEvents)[],
+            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | debug | My message']],
+            warnExp: [],
+            errExp: [],
+            debugExp: [],
+          },
+          {
+            desc: 'consoleApiEvent with warning message and stack',
+            event: {
+              ...consoleApiEvent,
+              type: 'warning',
+              stackTrace: { callFrames: [{ url: 'sds', lineNumber: 1, columnNumber: 2 }] },
+            },
+            levels: ['warn'] as (keyof ConsoleEvents)[],
+            logExp: [],
+            warnExp: [
+              ['FROM CHROME >>  2021-10-07T03:19:27.343Z | warning | My message'],
+              ['FROM CHROME >>  2021-10-07T03:19:27.343Z | warning |   at sds:1:2 (<no functionName>)'],
+            ],
+            errExp: [],
+            debugExp: [],
+          },
 
-      expect(console.log?.mock.calls).toEqual(t.expected.log ?? []);
-      expect(console.error?.mock.calls).toEqual(t.expected.error ?? []);
-      expect(console.warn?.mock.calls).toEqual(t.expected.warn ?? []);
-      expect(console.debug?.mock.calls).toEqual(t.expected.debug ?? []);
+          {
+            desc: 'consoleApiEvent with error message, logging only error - console should have message',
+            event: {
+              type: 'error',
+              args: [
+                {
+                  type: 'string',
+                  value: 'My message',
+                },
+              ],
+              timestamp: 1633576767343,
+              executionContextId: 2,
+            },
+            levels: ['log', 'error'] as (keyof ConsoleEvents)[],
+            logExp: [],
+            warnExp: [],
+            errExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | error | My message']],
+            debugExp: [],
+          },
+          {
+            desc: 'consoleApiEvent with exception - no logs',
+            event: exception,
+            levels: ['log'] as (keyof ConsoleEvents)[],
+            logExp: [],
+            warnExp: [],
+            errExp: [],
+            debugExp: [],
+          },
+          {
+            desc: 'consoleApiEvent with exception - should show uncaught',
+            event: exception,
+            levels: ['exception'] as (keyof ConsoleEvents)[],
+            logExp: [],
+            warnExp: [],
+            errExp: [
+              ['FROM CHROME >>  2023-02-23T10:46:55.467Z | UNCAUGHT | Error: Special exception from code'],
+              ['FROM CHROME >>  2023-02-23T10:46:55.467Z | UNCAUGHT |   at http://localhost:58708/mytest.com:4:19'],
+            ],
+            debugExp: [],
+          },
+          {
+            desc: 'unknown event',
+            event: { type: 'Some Ev' },
+            levels: ['exception', 'log', 'debug', 'error', 'warn', 'test:log'] as (keyof ConsoleEvents)[],
+            logExp: [
+              ['[cypress-redirect-browser-log] Unknown EVENT: -------\n'],
+              ['[cypress-redirect-browser-log] {"type":"Some Ev"}'],
+            ],
+            warnExp: [],
+            errExp: [],
+            debugExp: [],
+          },
+          {
+            desc: 'simple test event',
+            levels: ['test:log'] as (keyof ConsoleEvents)[],
+            event: {
+              ...consoleApiEvent,
+              type: 'log',
+              args: [
+                {
+                  type: 'string',
+                  value: '{"log":"test", "logType":"test", "message":"hello from test"}',
+                },
+              ],
+            },
+            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | test |  hello from test']],
+            warnExp: [],
+            errExp: [],
+            debugExp: [],
+          },
+          {
+            desc: 'test event - no message',
+            levels: ['test:log'] as (keyof ConsoleEvents)[],
+            event: {
+              ...consoleApiEvent,
+              type: 'log',
+              args: [
+                {
+                  type: 'string',
+                  value: '{"log":"test", "logType":"test","details":"test","command":"get"}',
+                },
+              ],
+            },
+            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | test | command: get ->  | details: test']],
+            warnExp: [],
+            errExp: [],
+            debugExp: [],
+          },
+          {
+            desc: 'test event - full',
+            levels: ['test:log'] as (keyof ConsoleEvents)[],
+            event: {
+              ...consoleApiEvent,
+              type: 'log',
+              args: [
+                {
+                  type: 'string',
+                  value: '{"log":"test", "logType":"test","message":"Hi from test","details":"test","command":"get"}',
+                },
+              ],
+            },
+
+            logExp: [
+              ['FROM CHROME >>  2021-10-07T03:19:27.343Z | test | command: get -> Hi from test | details: test'],
+            ],
+            warnExp: [],
+            errExp: [],
+            debugExp: [],
+          },
+          {
+            desc: 'test event - full with json details',
+            levels: ['test:log'] as (keyof ConsoleEvents)[],
+            event: {
+              ...consoleApiEvent,
+              type: 'log',
+              args: [
+                {
+                  type: 'string',
+                  value:
+                    '{"log":"test", "logType":"test","message":"Hi from test","details":"{\\"obj2\\":\\"value\\"}","command":"get"}',
+                },
+              ],
+            },
+            logExp: [
+              [
+                'FROM CHROME >>  2021-10-07T03:19:27.343Z | test | command: get -> Hi from test | details: {"obj2":"value"}',
+              ],
+            ],
+            warnExp: [],
+            errExp: [],
+            debugExp: [],
+          },
+        ])
+        .run(t => {
+          t.levels.forEach(lev => defaultHandlers(lev, ev));
+          transform(ev)(t.event as any);
+
+          expect(consoleMocked.log?.mock.calls).toEqual(t.logExp);
+          expect(consoleMocked.debug?.mock.calls).toEqual(t.debugExp);
+          expect(consoleMocked.warn?.mock.calls).toEqual(t.warnExp);
+          expect(consoleMocked.error?.mock.calls).toEqual(t.errExp);
+        });
     });
 
-  it('logException', () => {
-    const console = consoleMock();
-    const res = redirectLog();
-    res.logException()(exception);
+    it('user defined handler: log', () => {
+      // non default
+      ev.on('log', args => {
+        console.log(args);
+      });
 
-    expect(console.log?.mock.calls[0][0]).toContain('[2023-02-23T10:46:55.467Z] ⚠ console.Uncaught called');
-    expect(console.log?.mock.calls[1][0][0]).toContain(exception.exceptionDetails.exception.description);
-    expect(console.error?.mock.calls).toEqual([]);
-    expect(console.warn?.mock.calls).toEqual([]);
-    expect(console.debug?.mock.calls).toEqual([]);
+      transform(ev)({ entry: browserApiEvent });
+      expect(consoleMocked.log?.mock.calls[0][0]).toEqual({
+        date: '2021-10-07T03:19:27.343Z',
+        logType: 'log',
+        message: 'Message from Browser',
+        source: 'browser',
+        stack: undefined,
+        timestamp: 1633576767343,
+      });
+      expect(consoleMocked.error?.mock.calls).toEqual([]);
+      expect(consoleMocked.warn?.mock.calls).toEqual([]);
+      expect(consoleMocked.debug?.mock.calls).toEqual([]);
+    });
+
+    it('user defined handler: error - no log', () => {
+      // non default
+      ev.on('error', args => {
+        console.log(args);
+      });
+
+      transform(ev)({ entry: browserApiEvent });
+      expect(consoleMocked.log?.mock.calls).toEqual([]);
+      expect(consoleMocked.error?.mock.calls).toEqual([]);
+      expect(consoleMocked.warn?.mock.calls).toEqual([]);
+      expect(consoleMocked.debug?.mock.calls).toEqual([]);
+    });
+
+    it('user defined handler: error - has log', () => {
+      // non default
+      ev.on('error', args => {
+        console.log(args);
+      });
+
+      transform(ev)({ entry: { ...browserApiEvent, level: 'error' } });
+      expect(consoleMocked.log?.mock.calls).toEqual([
+        [
+          {
+            date: '2021-10-07T03:19:27.343Z',
+            logType: 'error',
+            message: 'Message from Browser',
+            source: 'browser',
+            stack: '',
+            timestamp: 1633576767343,
+          },
+        ],
+      ]);
+      expect(consoleMocked.error?.mock.calls).toEqual([]);
+      expect(consoleMocked.warn?.mock.calls).toEqual([]);
+      expect(consoleMocked.debug?.mock.calls).toEqual([]);
+    });
+
+    it('user defined handler: test:log - has log', () => {
+      // non default
+      ev.on('test:log', args => {
+        console.log(args);
+      });
+
+      transform(ev)({
+        ...consoleApiEvent,
+        type: 'log',
+        args: [
+          {
+            type: 'string',
+            value: '{"log":"test", "logType":"test","message":"Hi from test","details":"test","command":"get"}',
+          },
+        ],
+      });
+      expect(consoleMocked.log?.mock.calls).toEqual([
+        [
+          {
+            command: 'get',
+            date: '2021-10-07T03:19:27.343Z',
+            details: 'test',
+            logType: 'test',
+            message: 'Hi from test',
+            source: 'console:test',
+            timestamp: 1633576767343,
+          },
+        ],
+      ]);
+      expect(consoleMocked.error?.mock.calls).toEqual([]);
+      expect(consoleMocked.warn?.mock.calls).toEqual([]);
+      expect(consoleMocked.debug?.mock.calls).toEqual([]);
+    });
   });
 
-  describe('incorrect events', () => {
-    const circular = {
-      prop1: 'abc',
-      get prop2() {
-        return circular;
-      },
+  it('console incorrect circular', () => {
+    const data = {
+      desc: 'consoleApiEvent circular',
+      event: { type: 'log', ...circular },
+      levels: ['log'] as (keyof ConsoleEvents)[],
+      logExp: [
+        ['[cypress-redirect-browser-log] Unknown EVENT: -------\n'],
+        ['[cypress-redirect-browser-log] Could not stringify'],
+      ],
+      warnExp: [],
+      errExp: [],
+      debugExp: [],
     };
+    data.levels.forEach(lev => defaultHandlers(lev, ev));
+    transform(ev)(data.event as any);
 
-    it('browser incorrect', () => {
-      const console = consoleMock();
-      filterFunc(true)('browser', { type: 'log' });
+    expect(consoleMocked.log?.mock.calls).toEqual(data.logExp);
+    expect(consoleMocked.debug?.mock.calls).toEqual(data.debugExp);
+    expect(consoleMocked.warn?.mock.calls).toEqual(data.warnExp);
+    expect(consoleMocked.error?.mock.calls).toEqual(data.errExp);
+  });
 
-      expect(console.log?.mock.calls).toEqual([]);
-      expect(console.error?.mock.calls).toEqual([]);
+  it('browser incorrect circular', () => {
+    const data = {
+      desc: 'browser incorrectApiEvent circular',
+      event: { entry: { type: 'log', ...circular } },
+      levels: ['log'] as (keyof ConsoleEvents)[],
+      logExp: [],
+      warnExp: [],
+      errExp: [],
+      debugExp: [],
+    };
+    data.levels.forEach(lev => defaultHandlers(lev, ev));
+    transform(ev)(data.event as any);
 
-      expect(console.warn?.mock.calls).toEqual([['NOT A browserLog EVENT: -------\n{"type":"log"}']]);
-      expect(console.debug?.mock.calls).toEqual([]);
-    });
-
-    it('browser incorrect circular', () => {
-      const console = consoleMock();
-      filterFunc(true)('browser', { type: 'log', ...circular });
-
-      expect(console.log?.mock.calls).toEqual([]);
-      expect(console.error?.mock.calls).toEqual([]);
-
-      expect(console.warn?.mock.calls).toEqual([['NOT A browserLog EVENT: -------\nCould not stringify']]);
-      expect(console.debug?.mock.calls).toEqual([]);
-    });
-
-    it('console incorrect', () => {
-      const console = consoleMock();
-      filterFunc(true)('console', { type: 'log' });
-
-      expect(console.log?.mock.calls).toEqual([]);
-      expect(console.error?.mock.calls).toEqual([]);
-
-      expect(console.warn?.mock.calls).toEqual([['NOT A CONSOLE API EVENT: -------\n{"type":"log"}']]);
-      expect(console.debug?.mock.calls).toEqual([]);
-    });
-
-    it('console incorrect circular', () => {
-      const console = consoleMock();
-      filterFunc(true)('console', { type: 'log', ...circular });
-
-      expect(console.log?.mock.calls).toEqual([]);
-      expect(console.error?.mock.calls).toEqual([]);
-
-      expect(console.warn?.mock.calls).toEqual([['NOT A CONSOLE API EVENT: -------\nCould not stringify']]);
-      expect(console.debug?.mock.calls).toEqual([]);
-    });
+    expect(consoleMocked.log?.mock.calls).toEqual(data.logExp);
+    expect(consoleMocked.debug?.mock.calls).toEqual(data.debugExp);
+    expect(consoleMocked.warn?.mock.calls).toEqual(data.warnExp);
+    expect(consoleMocked.error?.mock.calls).toEqual(data.errExp);
   });
 });
