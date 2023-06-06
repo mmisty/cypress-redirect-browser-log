@@ -8,7 +8,7 @@ export const appendMultiline = (addition: string, message: string): string => {
       .join('\n');
   }
 
-  return `${addition} ${message}`;
+  return `${addition}${message}`;
 };
 
 export const stringifyStack = (callFrames?: Runtime.CallFrame[]): string | undefined =>

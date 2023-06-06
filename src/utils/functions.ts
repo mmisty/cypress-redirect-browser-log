@@ -62,3 +62,9 @@ export const dateWithCatch = (timestamp: number): string => {
     return '<could nod parse date>';
   }
 };
+
+export function fixStringLength(input: string, maxLength = 8): string {
+  const paddedString = input.padStart(maxLength, ' ');
+
+  return paddedString.slice(0, maxLength);
+}

@@ -1,1 +1,1 @@
-export { redirectLogsBrowser } from './setup';
+export { redirectTestLogs } from './setup';
