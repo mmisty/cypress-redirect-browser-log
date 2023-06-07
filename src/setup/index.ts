@@ -1,12 +1,10 @@
 import { wrapLogs } from '../logging/wrap-log';
 
 export type RedirectLogsConfig = {
-  isLogFromTest: boolean;
   isLogCommandDetails?: boolean;
 };
 
-export const redirectLogsBrowser = (config?: RedirectLogsConfig) => {
-  if (config?.isLogFromTest) {
-    wrapLogs({ isLogDetails: config.isLogCommandDetails });
-  }
+export const redirectTestLogs = (config?: RedirectLogsConfig) => {
+  const details = config?.isLogCommandDetails === undefined ? false : config?.isLogCommandDetails;
+  wrapLogs({ isLogDetails: details });
 };

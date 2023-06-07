@@ -1,36 +1,34 @@
 import type { ConsoleEvents, TypedEventEmitter } from './event-emitter';
 import { stringifyWithCatch } from '../utils/json-utils';
+import { dateWithCatch, fixStringLength } from '../utils/functions';
+import { appendMultiline } from '../utils/string-utils';
 
-const prefix = () => 'FROM CHROME >> ';
+const defaultLine = (date: string, level: string, message: string) => {
+  return appendMultiline(`FROM CHROME >> ${date} | ${fixStringLength(level)} | `, message.trim());
+};
 
 export const defaultHandlers = (event: keyof ConsoleEvents, eventEm: TypedEventEmitter<ConsoleEvents>) => {
   switch (event) {
     case 'exception': {
       eventEm.on('exception', res => {
-        console.error(`${prefix()} ${res.date} | UNCAUGHT | ${res.message}`);
-        console.error(`${prefix()} ${res.date} | UNCAUGHT |   ${res.stack ?? res.fullMessage}`);
+        const message = [res.message, `  ${res.stack ?? res.fullMessage}`].join('\n');
+        console.error(defaultLine(res.date, 'UNCAUGHT', message));
       });
       break;
     }
 
     case 'warn': {
       eventEm.on('warn', res => {
-        console.warn(`${prefix()} ${res.date} | ${res.logType} | ${res.message}`);
-
-        if (res.stack) {
-          console.warn(`${prefix()} ${res.date} | ${res.logType} | ${res.stack}`);
-        }
+        const message = res.stack ? [res.message, `  ${res.stack}`].join('\n') : res.message;
+        console.warn(defaultLine(res.date, res.logType, message));
       });
       break;
     }
 
     case 'error': {
       eventEm.on('error', res => {
-        console.error(`${prefix()} ${res.date} | ${res.logType} | ${res.message}`);
-
-        if (res.stack) {
-          console.error(`${prefix()} ${res.date} | ${res.logType} | ${res.stack}`);
-        }
+        const message = res.stack ? [res.message, `  ${res.stack}`].join('\n') : res.message;
+        console.error(defaultLine(res.date, res.logType, message));
       });
       break;
     }
@@ -41,7 +39,7 @@ export const defaultHandlers = (event: keyof ConsoleEvents, eventEm: TypedEventE
 
     case 'log': {
       eventEm.on(event, res => {
-        console.log(`${prefix()} ${res.date} | ${res.logType} | ${res.message}`);
+        console.log(defaultLine(res.date, res.logType, res.message));
       });
       break;
     }
@@ -50,14 +48,15 @@ export const defaultHandlers = (event: keyof ConsoleEvents, eventEm: TypedEventE
       eventEm.on('test:log', res => {
         const command = res.command ? `command: ${res.command} ->` : '';
         const details = res.details ? ` | details: ${res.details}` : '';
-        console.log(`${prefix()} ${res.date} | ${res.logType} | ${command} ${res.message}${details}`);
+        const message = `${command} ${res.message}${details}`;
+        console.log(defaultLine(res.date, res.logType, message));
       });
       break;
     }
 
     default: {
       eventEm.on(event, res => {
-        console.log(`${prefix()} ${stringifyWithCatch(res)}`);
+        console.log(defaultLine(dateWithCatch(Date.now()), 'unknown', stringifyWithCatch(res)));
       });
       break;
     }

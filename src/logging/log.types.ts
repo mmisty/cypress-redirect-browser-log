@@ -2,6 +2,7 @@ export type LogTestType = {
   log: 'test';
   logType: 'test' | 'error';
   command?: string;
+  spec: Cypress.Spec;
   message?: string;
   details?: unknown;
 };

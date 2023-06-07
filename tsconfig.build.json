@@ -9,13 +9,7 @@
     "strict": true,
     "skipLibCheck": true,
     "noImplicitAny": false,
-    "types": ["node", "jest", "cypress"],
-    "baseUrl": "./",
-    "paths": {
-      "cy-local": ["./src"],
-      "cy-local/*": ["./src/*"]
-    }
+    "types": ["node", "jest", "cypress"]
   },
-
   "include": ["src"]
 }

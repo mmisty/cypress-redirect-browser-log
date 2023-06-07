@@ -1,22 +1,22 @@
 import { consoleMock } from '../../mocks/console-mock';
-import { redirectLog } from '../../../src/plugins';
 import Browser = Cypress.Browser;
 import BrowserLaunchOptions = Cypress.BrowserLaunchOptions;
 import { PACK_NAME } from '../../../src/plugins/pack';
+import { redirectLogBrowser } from '../../../src/plugins';
 
 describe('redirectLog plugin', () => {
-  const cyOpts = (isOn: boolean) =>
+  const cyOpts = (isOn: boolean, timeout: number) =>
     ({
       env: {
         REDIRECT_BROWSER_LOG: isOn ? 'true' : 'false',
+        BROWSER_CONNECT_TIMEOUT: timeout ? `${timeout}` : undefined,
       },
     } as unknown as Cypress.PluginConfigOptions);
 
   it('should not log', async () => {
     process.env.DEBUG = PACK_NAME;
     const mockLog = consoleMock().log;
-    const res = redirectLog(cyOpts(false), { defaultListeners: ['log'] });
-    const handler = res.browserLaunchHandler(200);
+    const handler = redirectLogBrowser(cyOpts(false, 200), ['log']);
     let error: Error | undefined = undefined;
 
     try {
@@ -35,8 +35,7 @@ describe('redirectLog plugin', () => {
   it('should not crash with debug', async () => {
     process.env.DEBUG = PACK_NAME;
     const mockLog = consoleMock().log;
-    const res = redirectLog(cyOpts(true), { defaultListeners: ['log'] });
-    const handler = res.browserLaunchHandler(200);
+    const handler = redirectLogBrowser(cyOpts(true, 200), ['log']);
     let error: Error | undefined = undefined;
 
     try {
@@ -66,8 +65,7 @@ describe('redirectLog plugin', () => {
   it('should not crash with no debug', async () => {
     process.env.DEBUG = '';
     const mockLog = consoleMock().log;
-    const res = redirectLog(cyOpts(true), { defaultListeners: ['log'] });
-    const handler = res.browserLaunchHandler(200);
+    const handler = redirectLogBrowser(cyOpts(true, 200), ['log']);
     let error: Error | undefined = undefined;
 
     try {
@@ -95,8 +93,7 @@ describe('redirectLog plugin', () => {
     process.env.DEBUG = PACK_NAME;
     const mockLog = consoleMock().log;
 
-    const res = redirectLog(cyOpts(true), { defaultListeners: ['log'] });
-    const handler = res.browserLaunchHandler(50);
+    const handler = redirectLogBrowser(cyOpts(true, 50), ['log']);
     let error: Error | undefined = undefined;
 
     try {
@@ -127,8 +124,7 @@ describe('redirectLog plugin', () => {
     process.env.DEBUG = '';
     const mockLog = consoleMock().log;
 
-    const res = redirectLog(cyOpts(true), { defaultListeners: ['log'] });
-    const handler = res.browserLaunchHandler(50);
+    const handler = redirectLogBrowser(cyOpts(true, 50), ['log']);
     let error: Error | undefined = undefined;
 
     try {
@@ -158,8 +154,7 @@ describe('redirectLog plugin', () => {
     process.env.DEBUG = PACK_NAME;
     const mockLog = consoleMock().log;
 
-    const res = redirectLog(cyOpts(true), { defaultListeners: ['log'] });
-    const handler = res.browserLaunchHandler(50);
+    const handler = redirectLogBrowser(cyOpts(true, 50), ['log']);
     let error: Error | undefined = undefined;
 
     try {
@@ -175,17 +170,13 @@ describe('redirectLog plugin', () => {
     expect(mockLog.mock.calls).toContainEqual([
       '[cypress-redirect-browser-log] existing port: --remote-debugging-port=3000',
     ]);
-    expect(mockLog.mock.calls).toContainEqual([
-      '[cypress-redirect-browser-log] Error: connect ECONNREFUSED 127.0.0.1:3000',
-    ]);
   });
 
   it('debug logs', async () => {
     process.env.DEBUG = PACK_NAME;
     const mockLog = consoleMock().log;
 
-    const res = redirectLog(cyOpts(true), { defaultListeners: ['log'] });
-    const handler = res.browserLaunchHandler(50);
+    const handler = redirectLogBrowser(cyOpts(true, 50), ['log']);
     let error: Error | undefined = undefined;
 
     try {

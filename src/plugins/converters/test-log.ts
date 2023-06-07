@@ -5,6 +5,7 @@ import { dateWithCatch } from '../../utils/functions';
 export type TestLogEntry = {
   command: string;
   source: 'console:test';
+  spec: Cypress.Spec;
   message: string;
   details: string;
   logType: string;
@@ -28,6 +29,7 @@ export const logTest = (testLog: LogTestType, timestamp: number): TestLogEntry =
     details: messageDetails,
     logType,
     timestamp,
+    spec: testLog.spec,
     date: dateWithCatch(timestamp),
   };
 };

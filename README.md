@@ -1,112 +1,25 @@
-# cypress-redirect-browser-log
+# DEV: cypress-redirect-browser-log
 
-Will connect to **chrome** debugging protocol and redirect logs to node process
+To see instructions and usage take a look on [README](./README-pack.md)
 
-Will redirect browser console events like: 
- - console API events
- - uncaught exceptions
- - some browser console events
-
-Install:
-
-`npm i --save-dev cypress-redirect-browser-log`
-
-
-## Setup
-1. setup support
-
-```typescript
-// support/index.ts or where is support located
-redirectLogsBrowser({
-  isLogFromTest: false, // when 'true' will log all commands from cypress command log to output
-});
-```
-
-2. setup plugins (setupNodeEvents)
-
-```javascript
-// cypress.config.ts
-setupNodeEvents(on, config){
-  const redirect = redirectLog({isLog: true});
-  redirect.beforeBrowserLaunch(on);
-  
-  //... other existing configrations
-  
-  return config;
-}
-
-```
-
-if you need to handle 'before:browser:launch' you can use this configuration :
-```javascript
-// cypress.config.ts
-setupNodeEvents(on, config){
-  const redirect = redirectLog({ isLog: true });
-  const browserHandler = redirect.browserLaunchHandler(filterFunc(true));
-  
-  on('before:browser:launch', (browser: Browser, browserLaunchOptions: BrowserLaunchOptions) => {
-    return browserHandler(browser, browserLaunchOptions);
-  });
-  
-  return config;
-}
-```
-
-3. run tests with `--browser chrome --headless` (for electron logs will not be redirected)
-4. you'll see logs in console like:
-```text
-FROM CHROME >> 2022-11-25T22:27:07.441Z |   debug |  ======== TEST STARTED: test integration should be no details for commands
-FROM CHROME >> 2022-11-25T22:27:07.464Z |    test |  command: Coverage -> Reset [@cypress/code-coverage]
-  test integration
-FROM CHROME >> 2022-11-25T22:27:07.495Z |    test |  command: route
-FROM CHROME >> 2022-11-25T22:27:07.501Z |    test |  command: visit -> mytest.com
-FROM CHROME >> 2022-11-25T22:27:07.538Z |    test |  command: request -> mytest.com, {}
-FROM CHROME >> 2022-11-25T22:27:07.778Z |     log |  LOG FROM APPLICATION!!
-FROM CHROME >> 2022-11-25T22:27:07.778Z | warning |  WARN FROM APPLICATION!!
-
-```
-
-### Advanced config: 
-
-In support config you can choose whether to redirect all commands from tests or not:
-
-```javascript
-// no logs for tests, only application logs and browser
-redirectLogsBrowser({
-  isLogFromTest: false,
-});
-```
-
-```javascript
-// logs all commands, does not log details for each command
-redirectLogsBrowser({
-  isLogFromTest: {
-    isLogCommandDetails: false,
-  },
-});
-```
-
-```javascript
-// logs all commands, logs details for each command
-redirectLogsBrowser({
-  isLogFromTest: {
-    isLogCommandDetails: true,
-  },
-});
-```
 
 ## Contribution
+Feel free to contribute!
 
-- [x] typescript
-- [x] code coverage for cypress and jest, merge coverage
-- [x] formatting and eslint
-- [x] jest tests
-- [x] log uncaught exceptions from your Application
-- [ ] todo to file
-- [ ] todo config
-- [ ] todo docs
+### Changes
+- after making changes run:
+    - `npm run pre`
+
+### Publishing
+- all publishing files (specified in [tsconfig.build.json](./tsconfig.build.json)) will go to 'lib' folder and also - [README-pack](./README-pack.md)
+  and [package-publish.json](./package-publish.json)
+- to change some data for publishing change within file [package-publish.json](./package-publish.json), version will be set automatically
+- when adding prod dependancy add to [package-publish.json](./package-publish.json)
+
+
 
 ### Scripts
+todo fix
 
 | script          | description                                                                                                                                                 |
 |-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|

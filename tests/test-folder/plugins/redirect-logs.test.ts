@@ -93,7 +93,7 @@ describe('redirect-logs', () => {
           desc: 'browserApiEvent with log message, logging only log - console should have message',
           event: { entry: browserApiEvent },
           levels: ['log'] as (keyof ConsoleEvents)[],
-          logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | log | Message from Browser']],
+          logExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |      log | Message from Browser']],
           warnExp: [],
           errExp: [],
           debugExp: [],
@@ -166,9 +166,9 @@ describe('redirect-logs', () => {
           logExp: [],
           warnExp: [],
           errExp: [
-            ['FROM CHROME >>  2021-10-07T03:19:27.343Z | error | Message from Browser'],
             [
-              'FROM CHROME >>  2021-10-07T03:19:27.343Z | error |   at http://localhost:58708/mytest.com:3:18 (<no functionName>)',
+              'FROM CHROME >> 2021-10-07T03:19:27.343Z |    error | Message from Browser\n' +
+                'FROM CHROME >> 2021-10-07T03:19:27.343Z |    error |     at http://localhost:58708/mytest.com:3:18 (<no functionName>)',
             ],
           ],
           debugExp: [],
@@ -195,9 +195,9 @@ describe('redirect-logs', () => {
           levels: ['warn'] as (keyof ConsoleEvents)[],
           logExp: [],
           warnExp: [
-            ['FROM CHROME >>  2021-10-07T03:19:27.343Z | warning | Message from Browser'],
             [
-              'FROM CHROME >>  2021-10-07T03:19:27.343Z | warning |   at http://localhost:58708/mytest.com:3:18 (myFunc)',
+              'FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning | Message from Browser\n' +
+                'FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning |     at http://localhost:58708/mytest.com:3:18 (myFunc)',
             ],
           ],
           errExp: [],
@@ -209,7 +209,7 @@ describe('redirect-logs', () => {
           levels: ['error'] as (keyof ConsoleEvents)[],
           logExp: [],
           warnExp: [],
-          errExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | error | Message from Browser']],
+          errExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error | Message from Browser']],
           debugExp: [],
         },
         {
@@ -218,7 +218,7 @@ describe('redirect-logs', () => {
           levels: ['error'] as (keyof ConsoleEvents)[],
           logExp: [],
           warnExp: [],
-          errExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | error | Message from Browser']],
+          errExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error | Message from Browser']],
           debugExp: [],
         },
       ])
@@ -239,7 +239,7 @@ describe('redirect-logs', () => {
             desc: 'consoleApiEvent with log message, logging only log - console should have message',
             event: consoleApiEvent,
             levels: ['log'] as (keyof ConsoleEvents)[],
-            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | log | My message']],
+            logExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |      log | My message']],
             warnExp: [],
             errExp: [],
             debugExp: [],
@@ -248,7 +248,7 @@ describe('redirect-logs', () => {
             desc: 'consoleApiEvent with log message, no value',
             event: { ...consoleApiEvent, args: [{ type: 'string' }] },
             levels: ['log'] as (keyof ConsoleEvents)[],
-            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | log | <No message parsed> {"type":"string"}']],
+            logExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |      log | <No message parsed> {"type":"string"}']],
             warnExp: [],
             errExp: [],
             debugExp: [],
@@ -258,7 +258,7 @@ describe('redirect-logs', () => {
             event: { ...consoleApiEvent, type: 'warning' },
             levels: ['warn'] as (keyof ConsoleEvents)[],
             logExp: [],
-            warnExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | warning | My message']],
+            warnExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning | My message']],
             errExp: [],
             debugExp: [],
           },
@@ -266,7 +266,7 @@ describe('redirect-logs', () => {
             desc: 'consoleApiEvent with debug message',
             event: { ...consoleApiEvent, type: 'debug' },
             levels: ['debug'] as (keyof ConsoleEvents)[],
-            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | debug | My message']],
+            logExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |    debug | My message']],
             warnExp: [],
             errExp: [],
             debugExp: [],
@@ -281,8 +281,10 @@ describe('redirect-logs', () => {
             levels: ['warn'] as (keyof ConsoleEvents)[],
             logExp: [],
             warnExp: [
-              ['FROM CHROME >>  2021-10-07T03:19:27.343Z | warning | My message'],
-              ['FROM CHROME >>  2021-10-07T03:19:27.343Z | warning |   at sds:1:2 (<no functionName>)'],
+              [
+                'FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning | My message\n' +
+                  'FROM CHROME >> 2021-10-07T03:19:27.343Z |  warning |     at sds:1:2 (<no functionName>)',
+              ],
             ],
             errExp: [],
             debugExp: [],
@@ -304,7 +306,7 @@ describe('redirect-logs', () => {
             levels: ['log', 'error'] as (keyof ConsoleEvents)[],
             logExp: [],
             warnExp: [],
-            errExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | error | My message']],
+            errExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |    error | My message']],
             debugExp: [],
           },
           {
@@ -323,8 +325,10 @@ describe('redirect-logs', () => {
             logExp: [],
             warnExp: [],
             errExp: [
-              ['FROM CHROME >>  2023-02-23T10:46:55.467Z | UNCAUGHT | Error: Special exception from code'],
-              ['FROM CHROME >>  2023-02-23T10:46:55.467Z | UNCAUGHT |   at http://localhost:58708/mytest.com:4:19'],
+              [
+                'FROM CHROME >> 2023-02-23T10:46:55.467Z | UNCAUGHT | Error: Special exception from code\n' +
+                  'FROM CHROME >> 2023-02-23T10:46:55.467Z | UNCAUGHT |   at http://localhost:58708/mytest.com:4:19',
+              ],
             ],
             debugExp: [],
           },
@@ -353,7 +357,7 @@ describe('redirect-logs', () => {
                 },
               ],
             },
-            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | test |  hello from test']],
+            logExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |     test | hello from test']],
             warnExp: [],
             errExp: [],
             debugExp: [],
@@ -371,7 +375,7 @@ describe('redirect-logs', () => {
                 },
               ],
             },
-            logExp: [['FROM CHROME >>  2021-10-07T03:19:27.343Z | test | command: get ->  | details: test']],
+            logExp: [['FROM CHROME >> 2021-10-07T03:19:27.343Z |     test | command: get ->  | details: test']],
             warnExp: [],
             errExp: [],
             debugExp: [],
@@ -391,7 +395,7 @@ describe('redirect-logs', () => {
             },
 
             logExp: [
-              ['FROM CHROME >>  2021-10-07T03:19:27.343Z | test | command: get -> Hi from test | details: test'],
+              ['FROM CHROME >> 2021-10-07T03:19:27.343Z |     test | command: get -> Hi from test | details: test'],
             ],
             warnExp: [],
             errExp: [],
@@ -413,7 +417,7 @@ describe('redirect-logs', () => {
             },
             logExp: [
               [
-                'FROM CHROME >>  2021-10-07T03:19:27.343Z | test | command: get -> Hi from test | details: {"obj2":"value"}',
+                'FROM CHROME >> 2021-10-07T03:19:27.343Z |     test | command: get -> Hi from test | details: {"obj2":"value"}',
               ],
             ],
             warnExp: [],

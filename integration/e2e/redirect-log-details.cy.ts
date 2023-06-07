@@ -1,8 +1,7 @@
 import { visitHtml } from '../test-helper/helper';
-import { redirectLogsBrowser } from '../../src';
+import { redirectTestLogs } from '../../src';
 
-redirectLogsBrowser({
-  isLogFromTest: true,
+redirectTestLogs({
   isLogCommandDetails: true,
 });
 

@@ -10,7 +10,7 @@ describe('utils', () => {
         desc: 'one line',
         str: 'abcde fg',
         addition: 'BBB >> ',
-        expected: 'BBB >>  abcde fg',
+        expected: 'BBB >> abcde fg',
       },
       {
         desc: 'multiline',

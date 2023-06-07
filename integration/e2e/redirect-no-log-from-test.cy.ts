@@ -1,9 +1,7 @@
 import { visitHtml } from '../test-helper/helper';
-import { redirectLogsBrowser } from '../../src';
+import { redirectTestLogs } from '../../src';
 
-redirectLogsBrowser({
-  isLogFromTest: false,
-});
+redirectTestLogs();
 
 describe('test integration', () => {
   it('should be no commands in log', () => {

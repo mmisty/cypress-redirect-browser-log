@@ -125,12 +125,206 @@ const getConsoleEventsFromType = (type: LogType): keyof ConsoleEvents | undefine
   }
 };
 
-export const redirectLog = (
+const defaultListenersRegister: (keyof ConsoleEvents)[] = ['exception', 'error', 'warn', 'log', 'debug', 'test:log'];
+
+type EventHandler = (eventEmitter: TypedEventEmitter<ConsoleEvents>) => void;
+
+/**
+ * Register redirection with default events ['exception', 'error', 'warn', 'log', 'debug', 'test:log'];
+ * @param on Cypress.PluginEvents
+ * @param cyConfig Cypress.PluginConfigOptions
+ * @example
+ * redirectLog(on, config);
+ */
+export function redirectLog(on: Cypress.PluginEvents, cyConfig: Cypress.PluginConfigOptions): void;
+
+/**
+ * Register redirection with specified events and with user handler
+ * @param on Cypress.PluginEvents
+ * @param cyConfig Cypress.PluginConfigOptions
+ * @param logs array of events to log ex. ['exception', 'error', 'warn', 'log', 'debug', 'test:log'];
+ * @example
+ * redirectLog(on, config, ['exception', 'test:log'])
+ */
+export function redirectLog(
+  on: Cypress.PluginEvents,
+  cyConfig: Cypress.PluginConfigOptions,
+  logs: (keyof ConsoleEvents)[],
+): void;
+
+/**
+ * Register redirection with overriding default events specified within user handler
+ * @param on Cypress.PluginEvents
+ * @param cyConfig Cypress.PluginConfigOptions
+ * @param handler user handler
+ * @example
+ * redirectLog(on, config, handler => {
+ *  handler.on('exception', (res) => {
+ *     // can also write to file
+ *     console.log(res)
+ *   });
+ * });
+ */
+export function redirectLog(
+  on: Cypress.PluginEvents,
+  cyConfig: Cypress.PluginConfigOptions,
+  handler: EventHandler,
+): void;
+
+/**
+ * Register redirection with specified events and with user handler
+ * @param on Cypress.PluginEvents
+ * @param cyConfig Cypress.PluginConfigOptions
+ * @param logs array of events to log ex. ['exception', 'error', 'warn', 'log', 'debug', 'test:log'];
+ * @param handler user handler
+ * @example
+ * redirectLog(on, config, ['test:log'], handler => {
+ *  handler.on('exception', (res) => {
+ *     // can also write to file
+ *     console.log(res)
+ *   });
+ * });
+ * // disable default
+ * redirectLog(on, config, [], handler => {
+ *  handler.on('exception', (res) => {
+ *     // can also write to file
+ *     console.log(res)
+ *   });
+ * });
+ */
+export function redirectLog(
+  on: Cypress.PluginEvents,
+  cyConfig: Cypress.PluginConfigOptions,
+  logs: (keyof ConsoleEvents)[],
+  handler: EventHandler,
+): void;
+
+export function redirectLog(...args: unknown[]) {
+  const on = args[0] as Cypress.PluginEvents;
+  const cyConfig = args[1] as Cypress.PluginConfigOptions;
+  let logs = defaultListenersRegister;
+  let handler: EventHandler | undefined = undefined;
+
+  if (args.length === 3) {
+    if (Array.isArray(args[2])) {
+      logs = args[2];
+    } else {
+      logs = defaultListenersRegister; // default log events
+      handler = args[2] as EventHandler;
+    }
+  }
+
+  if (args.length === 4) {
+    logs = args[2] as (keyof ConsoleEvents)[];
+    handler = args[3] as EventHandler;
+  }
+
+  const res = redirectLogBase(cyConfig, { defaultListeners: logs }, handler);
+  res.beforeBrowserLaunch(on);
+}
+
+type BrowserHandler = (browser: Browser, browserLaunchOptions: BrowserLaunchOptions) => Promise<BrowserLaunchOptions>;
+
+/**
+ * Register redirection with default events ['exception', 'error', 'warn', 'log', 'debug', 'test:log'];
+ * @param cyConfig Cypress.PluginConfigOptions
+ * @returns browserHandler
+ * @example
+ * const browserHandler = redirectLogBrowser(config);
+ *
+ * on('before:browser:launch', (browser, opts) => {
+ *         return browserHandler(browser, opts);
+ *  });
+ */
+export function redirectLogBrowser(cyConfig: Cypress.PluginConfigOptions): BrowserHandler;
+
+/**
+ * Register redirection with specified events;
+ * @param cyConfig Cypress.PluginConfigOptions
+ * @param logs array of events to log ex. ['exception', 'error', 'warn', 'log', 'debug', 'test:log'];
+ * @returns browserHandler
+ * @example
+ * const browserHandler = redirectLogBrowser(config, ['exception']);
+ *
+ * on('before:browser:launch', (browser, opts) => {
+ *         return browserHandler(browser, opts);
+ *  });
+ */
+export function redirectLogBrowser(
+  cyConfig: Cypress.PluginConfigOptions,
+  logs: (keyof ConsoleEvents)[],
+): BrowserHandler;
+
+/**
+ * Register redirection only with specified events within user handler
+ * @param cyConfig Cypress.PluginConfigOptions
+ * @param handler user handler for events
+ * @returns browserHandler
+ * @example
+ * const browserHandler = redirectLogBrowser(config, handler => {
+ *   handler.on('exception', (res) => {
+ *     // can write to file for example
+ *     console.log(res)
+ *   });
+ * });
+ *
+ * on('before:browser:launch', (browser, opts) => {
+ *         return browserHandler(browser, opts);
+ *  });
+ */
+export function redirectLogBrowser(cyConfig: Cypress.PluginConfigOptions, handler: EventHandler): BrowserHandler;
+
+/**
+ * Register redirection with specified events and user handler
+ * @param cyConfig Cypress.PluginConfigOptions
+ * @param logs array of events to log ex. ['exception', 'error', 'warn', 'log', 'debug', 'test:log'];
+ * @param handler user handler for events
+ * @returns browserHandler
+ * @example
+ * const browserHandler = redirectLogBrowser(config, ['test:log'], handler => {
+ *   handler.on('exception', (res) => {
+ *     // can write to file for example
+ *     console.log(res)
+ *   });
+ * });
+ *
+ * on('before:browser:launch', (browser, opts) => {
+ *         return browserHandler(browser, opts);
+ *  });
+ */
+export function redirectLogBrowser(
+  cyConfig: Cypress.PluginConfigOptions,
+  logs: (keyof ConsoleEvents)[],
+  handler: EventHandler,
+): BrowserHandler;
+
+export function redirectLogBrowser(...args: unknown[]): BrowserHandler {
+  const cyConfig = args[0] as Cypress.PluginConfigOptions;
+  let logs = defaultListenersRegister;
+  let handler: EventHandler | undefined = undefined;
+
+  if (args.length === 2) {
+    if (Array.isArray(args[1])) {
+      logs = args[1];
+    } else {
+      logs = defaultListenersRegister; // default log events
+      handler = args[1] as EventHandler;
+    }
+  }
+
+  if (args.length === 3) {
+    logs = Array.isArray(args[1]) ? args[1] : [];
+    handler = args[2] as EventHandler;
+  }
+
+  return redirectLogBase(cyConfig, { defaultListeners: logs }, handler).browserLaunchHandler();
+}
+
+const redirectLogBase = (
   cyConfig: Cypress.PluginConfigOptions,
   config: Config,
   handler?: (eventEmitter: TypedEventEmitter<ConsoleEvents>) => void,
 ) => {
-  const defaultListenersRegister: (keyof ConsoleEvents)[] = ['exception', 'error', 'warn', 'log', 'test:log'];
   const { defaultListeners } = config ?? { defaultListeners: defaultListenersRegister };
   const isLog = cyConfig.env['REDIRECT_BROWSER_LOG'] === 'true' || cyConfig.env['REDIRECT_BROWSER_LOG'] === true;
   const eventEmitter = new TypedEventEmitter();
@@ -183,7 +377,7 @@ export const redirectLog = (
       const anyConsoleEvent = transform(eventEmitter);
       const rdp = ensureRdpPort(args);
       const interval = 100;
-      const attempts = timeout / interval;
+      const attempts = parseInt(`${cyConfig.env['BROWSER_CONNECT_TIMEOUT'] ?? timeout}`) / interval;
 
       const CDP = require('chrome-remote-interface');
       let attempt = 1;
