@@ -9,8 +9,8 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
     const logObj = (): LogTestType => ({
       log: 'test',
       logType: 'test',
-
       command: undefined,
+      spec: Cypress.spec,
       message: `======== TEST STARTED: ${test.fullTitle()}`,
       details: undefined,
     });
@@ -38,7 +38,7 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
     const logObj = (): LogTestType => ({
       log: 'test',
       logType: test.isFailed() ? 'error' : 'test',
-
+      spec: Cypress.spec,
       command: undefined,
       message: `==== TEST RESULT: ${testResult()}`,
       details: test.err?.message,
@@ -73,6 +73,7 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
       log: 'test',
       logType: 'test',
       command: name,
+      spec: Cypress.spec,
       message: overrideMessage(message, consoleProps),
       details: isLogDetails ? details() : undefined,
     });
