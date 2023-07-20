@@ -15,7 +15,11 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
       details: undefined,
     });
 
-    localConsole.debug(JSON.stringify(logObj()));
+    if (!Cypress.config('isInteractive')) {
+      localConsole.debug(JSON.stringify(logObj()));
+    } else {
+      localConsole.debug(logObj().message);
+    }
   });
 
   Cypress.on('test:after:run', (_attributes: unknown, test: Mocha.Test) => {
@@ -43,7 +47,12 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
       message: `==== TEST RESULT: ${testResult()}`,
       details: test.err?.message,
     });
-    localConsole.debug(JSON.stringify(logObj()));
+
+    if (!Cypress.config('isInteractive')) {
+      localConsole.debug(JSON.stringify(logObj()));
+    } else {
+      localConsole.debug(logObj().message);
+    }
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -77,7 +86,10 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
       details: isLogDetails ? details() : undefined,
     });
 
-    if (Cypress.env('REDIRECT_BROWSER_LOG') === 'true' || Cypress.env('REDIRECT_BROWSER_LOG') === true) {
+    if (
+      !Cypress.config('isInteractive') &&
+      (Cypress.env('REDIRECT_BROWSER_LOG') === 'true' || Cypress.env('REDIRECT_BROWSER_LOG') === true)
+    ) {
       localConsole.debug(JSON.stringify(logObj()));
     }
   });
