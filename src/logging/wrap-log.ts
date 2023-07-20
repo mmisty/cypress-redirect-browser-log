@@ -6,16 +6,16 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
   const { isLogDetails } = options;
 
   Cypress.on('test:before:run', (testAttributes: Cypress.ObjectLike, test: Mocha.Test) => {
-    const logObj = (): LogTestType => ({
+    const logObj: LogTestType = {
       log: 'test',
       logType: 'test',
       command: undefined,
       spec: Cypress.spec,
       message: `======== TEST STARTED: ${test.fullTitle()}`,
       details: undefined,
-    });
+    };
 
-    localConsole.log(JSON.stringify(logObj()));
+    localConsole.debug(Cypress.config('isInteractive') ? logObj.message : JSON.stringify(logObj));
   });
 
   Cypress.on('test:after:run', (_attributes: unknown, test: Mocha.Test) => {
@@ -35,16 +35,16 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
       return 'UNKNOWN';
     };
 
-    const logObj = (): LogTestType => ({
+    const logObj: LogTestType = {
       log: 'test',
       logType: test.isFailed() ? 'error' : 'test',
       spec: Cypress.spec,
       command: undefined,
       message: `==== TEST RESULT: ${testResult()}`,
       details: test.err?.message,
-    });
+    };
 
-    localConsole.log(JSON.stringify(logObj()));
+    localConsole.debug(Cypress.config('isInteractive') ? logObj.message : JSON.stringify(logObj));
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -69,15 +69,20 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
       return stringifyWithCatch(consoleProps, false, 'Could not stringify details');
     };
 
-    const logObj = (): LogTestType => ({
+    const logObj: LogTestType = {
       log: 'test',
       logType: 'test',
       command: name,
       spec: Cypress.spec,
       message: overrideMessage(message, consoleProps),
       details: isLogDetails ? details() : undefined,
-    });
+    };
 
-    localConsole.log(JSON.stringify(logObj()));
+    if (
+      !Cypress.config('isInteractive') &&
+      (Cypress.env('REDIRECT_BROWSER_LOG') === 'true' || Cypress.env('REDIRECT_BROWSER_LOG') === true)
+    ) {
+      localConsole.debug(JSON.stringify(logObj));
+    }
   });
 };
