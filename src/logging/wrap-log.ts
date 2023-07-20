@@ -15,11 +15,7 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
       details: undefined,
     });
 
-    if (!Cypress.config('isInteractive')) {
-      localConsole.debug(JSON.stringify(logObj()));
-    } else {
-      localConsole.debug(logObj().message);
-    }
+    localConsole.debug(Cypress.config('isInteractive') ? logObj().message : JSON.stringify(logObj()));
   });
 
   Cypress.on('test:after:run', (_attributes: unknown, test: Mocha.Test) => {
@@ -48,11 +44,7 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
       details: test.err?.message,
     });
 
-    if (!Cypress.config('isInteractive')) {
-      localConsole.debug(JSON.stringify(logObj()));
-    } else {
-      localConsole.debug(logObj().message);
-    }
+    localConsole.debug(Cypress.config('isInteractive') ? logObj().message : JSON.stringify(logObj()));
   });
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
