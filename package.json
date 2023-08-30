@@ -15,6 +15,7 @@
     "template"
   ],
   "author": "Taisia Pitko (mmisty) <minydas@yandex.ru>",
+  "license": "MIT",
   "scripts": {
     "husky:install": "husky install",
     "lint": "eslint --fix '**/*.{ts,tsx,js}'",
@@ -58,7 +59,7 @@
     "@typescript-eslint/eslint-plugin": "^5.44.0",
     "@typescript-eslint/parser": "^5.44.0",
     "chalk": "~2.0.0",
-    "cypress": "^12.17.1",
+    "cypress": "^12.17.4",
     "eslint": "^8.28.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-cypress": "^2.12.1",
