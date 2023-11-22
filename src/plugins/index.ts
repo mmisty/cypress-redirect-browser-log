@@ -1,6 +1,6 @@
 import type { Runtime } from 'inspector';
 import Browser = Cypress.Browser;
-import BrowserLaunchOptions = Cypress.BrowserLaunchOptions;
+import BeforeBrowserLaunchOptions = Cypress.BeforeBrowserLaunchOptions;
 import { stringifyWithCatch } from '../utils/json-utils';
 import { type ConsoleEvents, TypedEventEmitter } from './event-emitter';
 import { getExceptionDetails, isRuntimeException } from './converters/exception';
@@ -16,8 +16,8 @@ export type Config = {
 
 type BrowserLaunchHandlerType = (
   browser: Browser,
-  browserLaunchOptions: BrowserLaunchOptions,
-) => Promise<BrowserLaunchOptions>;
+  browserLaunchOptions: BeforeBrowserLaunchOptions,
+) => Promise<BeforeBrowserLaunchOptions>;
 
 function isChrome(browser) {
   return (
@@ -223,7 +223,10 @@ export function redirectLog(...args: unknown[]) {
   res.beforeBrowserLaunch(on);
 }
 
-type BrowserHandler = (browser: Browser, browserLaunchOptions: BrowserLaunchOptions) => Promise<BrowserLaunchOptions>;
+type BrowserHandler = (
+  browser: Browser,
+  browserLaunchOptions: BeforeBrowserLaunchOptions,
+) => Promise<BeforeBrowserLaunchOptions>;
 
 /**
  * Register redirection with default events ['exception', 'error', 'warn', 'log', 'debug', 'test:log'];
@@ -338,7 +341,10 @@ const redirectLogBase = (
       },
       browserLaunchHandler:
         (): BrowserLaunchHandlerType =>
-        async (browser: Browser, browserLaunchOptions: BrowserLaunchOptions): Promise<BrowserLaunchOptions> => {
+        async (
+          browser: Browser,
+          browserLaunchOptions: BeforeBrowserLaunchOptions,
+        ): Promise<BeforeBrowserLaunchOptions> => {
           return Promise.resolve(browserLaunchOptions);
         },
     };
@@ -365,7 +371,7 @@ const redirectLogBase = (
 
   const browserLaunchHandler =
     (timeout = 60000): BrowserLaunchHandlerType =>
-    async (browser: Browser, browserLaunchOptions: BrowserLaunchOptions): Promise<BrowserLaunchOptions> => {
+    async (browser: Browser, browserLaunchOptions: BeforeBrowserLaunchOptions): Promise<BeforeBrowserLaunchOptions> => {
       const args = browserLaunchOptions.args || browserLaunchOptions;
 
       if (!isChrome(browser)) {
@@ -425,7 +431,7 @@ const redirectLogBase = (
   const beforeBrowserLaunch = (on: Cypress.PluginEvents) => {
     const browserHandler = browserLaunchHandler();
 
-    on('before:browser:launch', (browser: Browser, browserLaunchOptions: BrowserLaunchOptions) => {
+    on('before:browser:launch', (browser: Browser, browserLaunchOptions: BeforeBrowserLaunchOptions) => {
       return browserHandler(browser, browserLaunchOptions);
     });
   };
