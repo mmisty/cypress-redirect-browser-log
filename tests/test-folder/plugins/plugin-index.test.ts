@@ -1,6 +1,6 @@
 import { consoleMock } from '../../mocks/console-mock';
 import Browser = Cypress.Browser;
-import BrowserLaunchOptions = Cypress.BrowserLaunchOptions;
+import BrowserLaunchOptions = Cypress.BeforeBrowserLaunchOptions;
 import { PACK_NAME } from '../../../src/plugins/pack';
 import { redirectLogBrowser } from '../../../src/plugins';
 
