@@ -33,3 +33,48 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         coverage_path: "reports/coverage-full/clover.xml"
+
+
+  # ═══════════════════════════════════════════════════════════════
+  # PUBLISH: With specific commit messages, beta versions published always
+  # ═══════════════════════════════════════════════════════════════
+  publish:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          gitmsg="${{ github.event.commits[0].message }}"
+          echo "Commit: $gitmsg"
+
+          if [[ "$gitmsg" =~ "[patch]" ]] || [[ "$gitmsg" =~ "[fix]" ]]; then
+            npm run publish:patch && git push --tags
+          elif [[ "$gitmsg" =~ "[minor]" ]]; then
+            npm run publish:minor && git push --tags
+          elif [[ "$gitmsg" =~ "[major]" ]]; then
+            npm run publish:major && git push --tags
+          else
+            echo "Publishing beta"
+            npm run publish:beta || true
+          fi

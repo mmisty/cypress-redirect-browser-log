@@ -42,13 +42,19 @@
     "build": "rm -rf lib && tsc --project tsconfig.build.json && cp package-publish.json ./lib/package.json && cp README-pack.md ./lib/README.md",
     "prepublish1": "npm run pre && npm run build",
     "publish": "npm run publish:patch",
-    "publish:patch": "npm run prepublish1 && cd lib && export ver=$(semver $(npm show . version) --increment -i patch) && npm version $ver && npm publish && git tag $ver && git push --tags",
-    "publish:minor": "npm run prepublish1 && cd lib && export ver=$(semver $(npm show . version) --increment -i minor) && npm version $ver && npm publish && git tag $ver && git push --tags",
-    "publish:major": "npm run prepublish1 && cd lib && export ver=$(semver $(npm show . version) --increment -i major) && npm version $ver && npm publish && git tag $ver && git push --tags",
-    "prepublishOnly": "echo 'USE script \"npm run publish:patch\" (or minor/major)\n' && false"
+    "prepublishOnly": "{ echo \"Run script 'npm run publish:pack', 'npm run publish:minor', etc from package.json\n\"; exit 1; }",
+    "publishPack": "npm run pack && cd lib && npm publish --tag $TAG",
+    "publish:alpha": "export TAG=alpha && export ver=$(semver $(npm show . version --tag alpha || npm show . version) --increment -i prerelease  --preid 'alpha') && npm run publishPack && npm run postpublish",
+    "publish:beta": "export TAG=beta && export ver=$(semver $(npm show . version --tag beta || npm show . version) --increment -i prerelease  --preid 'beta') && npm run publishPack && npm run postpublish && npm deprecate -f \"@mmisty/cypress-allure-adapter@$ver\" \"this package version has been deprecated\"",
+    "publish:alpha:init": "export TAG=alpha && export ver=$(semver $(npm show . version) --increment -i prerelease  --preid 'alpha') && npm run publishPack && npm run postpublish",
+    "publish:patch": "export TAG=latest && export ver=$(semver $(npm show . version) --increment -i patch) && npm run publishPack && npm run postpublish",
+    "publish:minor": "export TAG=latest && export ver=$(semver $(npm show . version) --increment -i minor) && npm run publishPack && npm run postpublish",
+    "publish:major": "export TAG=latest && export ver=$(semver $(npm show . version) --increment -i major) && npm run publishPack && npm run postpublish",
+    "publish:pack": "export TAG=alpha && export ver=\"0.13.1-alpha.1\" && npm run publishPack && npm run postpublish",
+    "postpublish": "git tag v$ver"
   },
   "peerDependencies": {
-    "cypress": ">= 11.x"
+    "cypress": ">= 15.10.x"
   },
   "devDependencies": {
     "@cypress/code-coverage": "^4.0.3",
