@@ -51,7 +51,7 @@
     "cypress": ">= 11.x"
   },
   "devDependencies": {
-    "@cypress/code-coverage": "^3.10.0",
+    "@cypress/code-coverage": "^4.0.3",
     "@ephesoft/webpack.istanbul.loader": "^2.2.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@types/jest": "^29.2.3",
@@ -59,7 +59,7 @@
     "@typescript-eslint/eslint-plugin": "^5.44.0",
     "@typescript-eslint/parser": "^5.44.0",
     "chalk": "~2.0.0",
-    "cypress": "^13.6.0",
+    "cypress": "^15.14.1",
     "eslint": "^8.28.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-cypress": "^2.12.1",
