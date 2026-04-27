@@ -5,6 +5,7 @@ import { redirectLogBrowser } from './src/plugins';
 const cypressFolder = 'integration';
 
 export default defineConfig({
+  allowCypressEnv: false,
   e2e: {
     specPattern: `${cypressFolder}/e2e/**/*.(cy|test|spec).ts`,
     supportFile: `${cypressFolder}/support/index.ts`,
