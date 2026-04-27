@@ -331,7 +331,7 @@ const redirectLogBase = (
   const { defaultListeners } = config ?? { defaultListeners: defaultListenersRegister };
 
   const isLog =
-    `${cyConfig.env['REDIRECT_BROWSER_LOG']}` === 'true' || `${cyConfig.expose['REDIRECT_BROWSER_LOG']}` === 'true';
+    `${cyConfig.env?.['REDIRECT_BROWSER_LOG']}` === 'true' || `${cyConfig.expose?.['REDIRECT_BROWSER_LOG']}` === 'true';
   const eventEmitter = new TypedEventEmitter();
 
   if (!isLog) {
