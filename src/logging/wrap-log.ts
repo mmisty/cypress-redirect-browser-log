@@ -78,10 +78,7 @@ export const wrapLogs = (options: { isLogDetails?: boolean }): void => {
       details: isLogDetails ? details() : undefined,
     };
 
-    if (
-      !Cypress.config('isInteractive') &&
-      (Cypress.env('REDIRECT_BROWSER_LOG') === 'true' || Cypress.env('REDIRECT_BROWSER_LOG') === true)
-    ) {
+    if (!Cypress.config('isInteractive') && `${Cypress.expose('REDIRECT_BROWSER_LOG')}` === 'true') {
       localConsole.debug(JSON.stringify(logObj));
     }
   });

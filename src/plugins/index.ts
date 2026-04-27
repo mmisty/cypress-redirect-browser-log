@@ -329,7 +329,9 @@ const redirectLogBase = (
   handler?: (eventEmitter: TypedEventEmitter<ConsoleEvents>) => void,
 ) => {
   const { defaultListeners } = config ?? { defaultListeners: defaultListenersRegister };
-  const isLog = cyConfig.env['REDIRECT_BROWSER_LOG'] === 'true' || cyConfig.env['REDIRECT_BROWSER_LOG'] === true;
+
+  const isLog =
+    `${cyConfig.env['REDIRECT_BROWSER_LOG']}` === 'true' || `${cyConfig.expose['REDIRECT_BROWSER_LOG']}` === 'true';
   const eventEmitter = new TypedEventEmitter();
 
   if (!isLog) {
@@ -383,7 +385,11 @@ const redirectLogBase = (
       const anyConsoleEvent = transform(eventEmitter);
       const rdp = ensureRdpPort(args);
       const interval = 100;
-      const attempts = parseInt(`${cyConfig.env['BROWSER_CONNECT_TIMEOUT'] ?? timeout}`) / interval;
+
+      const attempts =
+        parseInt(
+          `${cyConfig.env['BROWSER_CONNECT_TIMEOUT'] ?? cyConfig.expose['BROWSER_CONNECT_TIMEOUT'] ?? timeout}`,
+        ) / interval;
 
       const CDP = require('chrome-remote-interface');
       let attempt = 1;

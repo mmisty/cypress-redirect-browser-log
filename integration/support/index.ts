@@ -1,7 +1,7 @@
 import { COVERAGE } from '../common/constants';
 
 const setupCoverage = () => {
-  if (Cypress.env(COVERAGE) === 'true' || Cypress.env(COVERAGE) === true) {
+  if (`${Cypress.expose(COVERAGE)}` === 'true') {
     console.log('ENABLE COV');
     require('@cypress/code-coverage/support');
   } else {
